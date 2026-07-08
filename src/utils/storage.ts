@@ -1,5 +1,5 @@
-import type { AppConfig } from '../api/types'
-import { storageKeys } from '../constants/storage'
+import type { AppConfig } from '@/api/types'
+import { storageKeys } from '@/constants/storage'
 
 const defaultConfig: AppConfig = {
   baseUrl: import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000',

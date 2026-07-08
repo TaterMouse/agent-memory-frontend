@@ -1,11 +1,11 @@
-import { request } from '../request'
+import { request } from '@/api/request'
 import type {
   MemoryItem,
   MemorySearchPayload,
   MemorySearchResult,
   MemoryWritePayload,
   MemoryWriteResult,
-} from '../types'
+} from '@/api/types'
 
 export function searchMemories(payload: MemorySearchPayload) {
   return request<MemorySearchResult>({

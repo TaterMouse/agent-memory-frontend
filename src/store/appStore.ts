@@ -1,6 +1,6 @@
 import { create } from 'zustand'
-import type { AppConfig } from '../api/types'
-import { getStoredAppConfig, saveAppConfig } from '../utils/storage'
+import type { AppConfig } from '@/api/types'
+import { getStoredAppConfig, saveAppConfig } from '@/utils/storage'
 
 interface AppStoreState {
   config: AppConfig

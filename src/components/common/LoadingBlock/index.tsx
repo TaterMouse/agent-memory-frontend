@@ -1,9 +1,14 @@
-import { Card, Skeleton } from 'antd'
+import { Skeleton } from 'antd'
+import { PageSection } from '@/components/common/PageSection'
 
-export function LoadingBlock() {
+interface LoadingBlockProps {
+  rows?: number
+}
+
+export function LoadingBlock({ rows = 4 }: LoadingBlockProps) {
   return (
-    <Card bordered={false}>
-      <Skeleton active paragraph={{ rows: 4 }} />
-    </Card>
+    <PageSection>
+      <Skeleton active paragraph={{ rows }} />
+    </PageSection>
   )
 }

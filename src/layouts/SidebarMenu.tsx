@@ -1,29 +1,26 @@
-import {
-  CommentOutlined,
-  DatabaseOutlined,
-  SettingOutlined,
-  UnorderedListOutlined,
-} from '@ant-design/icons'
-import { Menu } from 'antd'
+import { Menu, Typography } from 'antd'
 import type { MenuProps } from 'antd'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { appRoutes } from '../constants/routes'
-
-const items: MenuProps['items'] = [
-  { key: appRoutes.chat, icon: <CommentOutlined />, label: '聊天页' },
-  { key: appRoutes.memory, icon: <DatabaseOutlined />, label: '记忆管理' },
-  { key: appRoutes.task, icon: <UnorderedListOutlined />, label: '任务页' },
-  { key: appRoutes.settings, icon: <SettingOutlined />, label: '系统配置' },
-]
+import { menuRouteConfigs } from '@/router/route-config'
 
 export function SidebarMenu() {
   const location = useLocation()
   const navigate = useNavigate()
+  const items: MenuProps['items'] = menuRouteConfigs.map((route) => ({
+    key: route.path,
+    icon: route.icon,
+    label: route.label,
+  }))
 
   return (
     <div style={{ paddingTop: 16 }}>
-      <div style={{ padding: '0 16px 16px', fontSize: 16, fontWeight: 700 }}>
-        Frontend Shell
+      <div style={{ padding: '0 16px 16px' }}>
+        <Typography.Title level={5} style={{ margin: 0 }}>
+          Frontend Shell
+        </Typography.Title>
+        <Typography.Paragraph type="secondary" style={{ margin: '8px 0 0' }}>
+          A 负责导航与通用层，B/C 基于既有页面骨架继续接业务。
+        </Typography.Paragraph>
       </div>
       <Menu
         mode="inline"

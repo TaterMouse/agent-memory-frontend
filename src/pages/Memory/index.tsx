@@ -1,10 +1,9 @@
 import { useMemo, useState } from 'react'
 import { Space } from 'antd'
-import { MemoryCard } from '../../components/business/MemoryCard'
-import { MemoryFilterBar } from '../../components/business/MemoryFilterBar'
-import { EmptyState } from '../../components/common/EmptyState'
-import { PageContainer } from '../../components/common/PageContainer'
-import { mockMemories } from '../../mock/memory.mock'
+import { MemoryCard } from '@/components/business/MemoryCard'
+import { MemoryFilterBar } from '@/components/business/MemoryFilterBar'
+import { FeedbackState, PageContainer } from '@/components/common'
+import { mockMemories } from '@/mock/memory.mock'
 
 export default function MemoryPage() {
   const [keyword, setKeyword] = useState('')
@@ -21,7 +20,7 @@ export default function MemoryPage() {
   return (
     <PageContainer
       title="记忆管理页"
-      description="后续这里会接入记忆列表、编辑、删除和清空能力。"
+      description="这里保留给记忆列表、筛选、编辑和清理能力。A 已统一好筛选区和空状态模式，后续由 C 继续接真实接口。"
     >
       <Space direction="vertical" size={16} style={{ display: 'flex' }}>
         <MemoryFilterBar
@@ -33,7 +32,11 @@ export default function MemoryPage() {
         {filteredMemories.length ? (
           filteredMemories.map((memory) => <MemoryCard key={memory.memory_id} memory={memory} />)
         ) : (
-          <EmptyState description="当前没有符合条件的记忆数据。" />
+          <FeedbackState
+            status="empty"
+            title="暂无匹配记忆"
+            description="当前没有符合筛选条件的记忆数据。"
+          />
         )}
       </Space>
     </PageContainer>

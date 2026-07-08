@@ -1,4 +1,4 @@
-import type { ChatMessage } from '../api/types'
+import type { ChatMessage } from '@/api/types'
 
 export const mockMessages: ChatMessage[] = [
   { role: 'system', content: '这是聊天主流程的占位消息。' },
