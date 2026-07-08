@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { ChatMessage } from '../api/types'
+import type { ChatMessage } from '@/api/types'
 
 interface SessionStoreState {
   sessionId: string

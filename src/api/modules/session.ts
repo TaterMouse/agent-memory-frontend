@@ -1,5 +1,5 @@
-import { request } from '../request'
-import type { SessionCreatePayload, SessionInfo } from '../types'
+import { request } from '@/api/request'
+import type { SessionCreatePayload, SessionInfo } from '@/api/types'
 
 export function createSession(payload: SessionCreatePayload) {
   return request<SessionInfo>({

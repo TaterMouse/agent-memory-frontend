@@ -1,5 +1,5 @@
-import { request } from '../request'
-import type { TaskCreatePayload, TaskInfo, TaskProgressResult } from '../types'
+import { request } from '@/api/request'
+import type { TaskCreatePayload, TaskInfo, TaskProgressResult } from '@/api/types'
 
 export function createTask(payload: TaskCreatePayload) {
   return request<TaskInfo>({
