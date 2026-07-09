@@ -5,6 +5,7 @@ import { ChatInputPanel } from '@/components/business/ChatInputPanel'
 import { ChatMessageList } from '@/components/business/ChatMessageList'
 import { PageContainer, PageSection } from '@/components/common'
 import { createSession, closeSession } from '@/api/modules/session'
+import { getMemoryContext, writeMemories } from '@/api/modules/memory'
 import { useAppStore } from '@/store'
 import { useSessionStore } from '@/store/sessionStore'
 import { mockMessages } from '@/mock/chat.mock'
@@ -60,20 +61,47 @@ export default function ChatPage() {
     setInputValue('')
     setSending(true)
 
-    // 先把用户消息加到列表
+    // 1️⃣ 检索历史记忆（和用户当前问题相关的）
+    try {
+      const memoryResult = await getMemoryContext({
+        query: userContent,
+        user_id: config.userId,
+      })
+      if (memoryResult.memory_count > 0) {
+        setMessages((current) => [
+          ...current,
+          { role: 'system', content: `🧠 找到 ${memoryResult.memory_count} 条相关记忆` },
+        ])
+      }
+    } catch {
+      // 后端没启动时不影响使用，跳过记忆检索
+    }
+
+    // 2️⃣ 添加用户消息
     setMessages((current) => [
       ...current,
       { role: 'user', content: userContent },
     ])
 
-    // 模拟 AI 回复（后续接入真实大模型接口）
-    setTimeout(() => {
-      setMessages((current) => [
-        ...current,
-        { role: 'assistant', content: 'AI 回复待接入 — 后续将调用大模型接口。' },
-      ])
-      setSending(false)
-    }, 800)
+    // 3️⃣ 模拟 AI 回复（后续接入真实大模型接口）
+    await new Promise((resolve) => setTimeout(resolve, 800))
+    setMessages((current) => [
+      ...current,
+      { role: 'assistant', content: 'AI 回复待接入 — 后续将调用大模型接口。' },
+    ])
+
+    // 4️⃣ 写入本轮对话到记忆
+    try {
+      await writeMemories({
+        user_id: config.userId,
+        session_id: sessionId,
+        messages: [{ role: 'user', content: userContent }],
+      })
+    } catch {
+      showWarningMessage('记忆写入失败，但消息已发送')
+    }
+
+    setSending(false)
   }
 
   return (

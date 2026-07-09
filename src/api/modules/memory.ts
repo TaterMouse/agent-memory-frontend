@@ -1,11 +1,21 @@
 import { request } from '@/api/request'
 import type {
+  MemoryContextPayload,
+  MemoryContextResult,
   MemoryItem,
   MemorySearchPayload,
   MemorySearchResult,
   MemoryWritePayload,
   MemoryWriteResult,
 } from '@/api/types'
+
+export function getMemoryContext(payload: MemoryContextPayload) {
+  return request<MemoryContextResult>({
+    url: '/api/v1/memory/context',
+    method: 'POST',
+    data: payload,
+  })
+}
 
 export function searchMemories(payload: MemorySearchPayload) {
   return request<MemorySearchResult>({
