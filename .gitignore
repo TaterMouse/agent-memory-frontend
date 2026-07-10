@@ -12,10 +12,6 @@ dist
 dist-ssr
 *.local
 
-# Local planning/reference files
-docs/
-AGENTS.md
-
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
