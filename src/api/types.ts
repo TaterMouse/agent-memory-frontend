@@ -43,6 +43,20 @@ export interface SessionInfo {
   status: string
 }
 
+export interface MemoryContextPayload {
+  query: string
+  user_id: string
+  scene_id?: string
+  task_id?: string
+  max_tokens?: number
+  group_by_type?: boolean
+}
+
+export interface MemoryContextResult {
+  formatted_text: string
+  memory_count: number
+}
+
 export interface MemoryWritePayload {
   user_id: string
   scene_id?: string
