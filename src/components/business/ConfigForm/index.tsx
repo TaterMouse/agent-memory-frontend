@@ -1,5 +1,5 @@
 import { Button, Card, Form, Input, Space } from 'antd'
-import type { AppConfig } from '../../../api/types'
+import type { AppConfig } from '@/api/types'
 
 interface ConfigFormProps {
   initialValues: AppConfig

@@ -1,4 +1,4 @@
-import type { TaskProgressResult } from '../api/types'
+import type { TaskProgressResult } from '@/api/types'
 
 export const mockTaskProgress: TaskProgressResult = {
   task_id: 'task_demo',

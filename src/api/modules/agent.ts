@@ -1,5 +1,5 @@
-import { request } from '../request'
-import type { AgentRegisterPayload, AgentRegisterResult } from '../types'
+import { request } from '@/api/request'
+import type { AgentRegisterPayload, AgentRegisterResult } from '@/api/types'
 
 export function registerAgent(payload: AgentRegisterPayload) {
   return request<AgentRegisterResult>({

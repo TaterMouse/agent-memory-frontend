@@ -1,5 +1,6 @@
-import { ConfigProvider } from 'antd'
-import { AppRouterProvider } from './router'
+import { App as AntdApp, ConfigProvider } from 'antd'
+import { AppErrorBoundary } from '@/components/common'
+import { AppRouterProvider } from '@/router'
 
 function App() {
   return (
@@ -12,7 +13,11 @@ function App() {
         },
       }}
     >
-      <AppRouterProvider />
+      <AntdApp>
+        <AppErrorBoundary>
+          <AppRouterProvider />
+        </AppErrorBoundary>
+      </AntdApp>
     </ConfigProvider>
   )
 }

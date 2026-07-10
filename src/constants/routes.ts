@@ -4,3 +4,5 @@ export const appRoutes = {
   task: '/task',
   settings: '/settings',
 } as const
+
+export type AppRoutePath = (typeof appRoutes)[keyof typeof appRoutes]

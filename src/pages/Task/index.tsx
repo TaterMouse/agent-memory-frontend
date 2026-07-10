@@ -1,13 +1,13 @@
-import { Button, Card, Space } from 'antd'
-import { TaskProgressPanel } from '../../components/business/TaskProgressPanel'
-import { PageContainer } from '../../components/common/PageContainer'
-import { mockTaskProgress } from '../../mock/task.mock'
+import { Button, Space } from 'antd'
+import { TaskProgressPanel } from '@/components/business/TaskProgressPanel'
+import { PageContainer, PageSection } from '@/components/common'
+import { mockTaskProgress } from '@/mock/task.mock'
 
 export default function TaskPage() {
   return (
     <PageContainer
       title="任务页"
-      description="后续可以在这里接入创建任务、更新进度、查看任务状态等能力。"
+      description="这里承接任务创建、任务进度和相关记忆信息。A 先把展示结构固定住，后续由 C 继续补任务业务。"
       extra={
         <Space>
           <Button type="primary">创建任务</Button>
@@ -15,9 +15,9 @@ export default function TaskPage() {
         </Space>
       }
     >
-      <Card bordered={false}>
+      <PageSection>
         <TaskProgressPanel progress={mockTaskProgress} />
-      </Card>
+      </PageSection>
     </PageContainer>
   )
 }

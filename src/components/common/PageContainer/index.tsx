@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
-import { Card, Space, Typography } from 'antd'
+import { Space, Typography } from 'antd'
+import { PageSection } from '@/components/common/PageSection'
 
 interface PageContainerProps {
   title: string
@@ -8,10 +9,15 @@ interface PageContainerProps {
   children: ReactNode
 }
 
-export function PageContainer({ title, description, extra, children }: PageContainerProps) {
+export function PageContainer({
+  title,
+  description,
+  extra,
+  children,
+}: PageContainerProps) {
   return (
     <Space direction="vertical" size={16} style={{ display: 'flex' }}>
-      <Card bordered={false}>
+      <PageSection>
         <Space
           align="start"
           style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}
@@ -28,7 +34,7 @@ export function PageContainer({ title, description, extra, children }: PageConta
           </div>
           {extra}
         </Space>
-      </Card>
+      </PageSection>
       {children}
     </Space>
   )
