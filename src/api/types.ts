@@ -79,6 +79,7 @@ export interface MemoryItem {
   task_id?: string
   relevance_score?: number
   created_at?: string
+  updated_at?: string
 }
 
 export interface MemorySearchResult {
@@ -106,6 +107,13 @@ export interface TaskProgressResult {
   completed_count: number
   pending_count: number
   related_memory_count: number
+}
+
+export interface TaskProgressUpdatePayload {
+  status?: 'pending' | 'in_progress' | 'completed' | string
+  progress?: string
+  completed_items?: string[]
+  pending_items?: string[]
 }
 
 export function unwrapApiResponse<T>(payload: ApiResponse<T>) {

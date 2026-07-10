@@ -12,15 +12,30 @@ export function ConfigForm({ initialValues, onSubmit }: ConfigFormProps) {
   return (
     <Card bordered={false} title="系统配置">
       <Form form={form} layout="vertical" initialValues={initialValues} onFinish={onSubmit}>
-        <Form.Item label="Base URL" name="baseUrl">
+        <Form.Item
+          label="Base URL"
+          name="baseUrl"
+          // 规定BaseURL为必填，禁止BaseURL为空格的情况。
+          // BaseURL、UserID、SceneID做同样规定
+          rules={[{ required: true, whitespace: true, message: '请输入后端 Base URL' }]}
+        >
           <Input placeholder="http://localhost:8000" />
         </Form.Item>
-        <Form.Item label="User ID" name="userId">
+        <Form.Item
+          label="User ID"
+          name="userId"
+          rules={[{ required: true, whitespace: true, message: '请输入 User ID' }]}
+        >
           <Input placeholder="user_001" />
         </Form.Item>
-        <Form.Item label="Scene ID" name="sceneId">
+        <Form.Item
+          label="Scene ID"
+          name="sceneId"
+          rules={[{ required: true, whitespace: true, message: '请输入 Scene ID' }]}
+        >
           <Input placeholder="chat" />
         </Form.Item>
+        {/* AgentID和APIKey保持非必选和可输入的状态 */}
         <Form.Item label="Agent ID" name="agentId">
           <Input placeholder="agent_abc" />
         </Form.Item>
