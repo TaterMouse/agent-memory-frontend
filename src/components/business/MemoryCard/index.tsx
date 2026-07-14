@@ -4,8 +4,8 @@ import { StatusTag } from '@/components/common'
 
 export function MemoryCard({ memory }: { memory: MemoryItem }) {
   return (
-    <Card bordered={false}>
-      <Space direction="vertical" size={8} style={{ display: 'flex' }}>
+    <Card variant="borderless">
+      <Space orientation="vertical" size={8} style={{ display: 'flex' }}>
         <Space wrap>
           <StatusTag value={memory.memory_type ?? 'unknown'} />
           {memory.scene_id ? (

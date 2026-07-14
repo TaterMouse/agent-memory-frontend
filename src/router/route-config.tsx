@@ -6,10 +6,12 @@ import {
 } from '@ant-design/icons'
 import type { ReactNode } from 'react'
 import { appRoutes } from '@/constants/routes'
-import ChatPage from '@/pages/Chat'
-import MemoryPage from '@/pages/Memory'
-import SettingsPage from '@/pages/Settings'
-import TaskPage from '@/pages/Task'
+import {
+  ChatRoutePage,
+  MemoryRoutePage,
+  SettingsRoutePage,
+  TaskRoutePage,
+} from '@/router/LazyRoutePages'
 
 export interface AppRouteConfig {
   key: keyof typeof appRoutes
@@ -30,7 +32,7 @@ export const appRouteConfigs: AppRouteConfig[] = [
     title: '聊天页',
     description: '聊天主流程入口，后续由 B 继续接入会话、消息流与记忆联动。',
     icon: <CommentOutlined />,
-    element: <ChatPage />,
+    element: <ChatRoutePage />,
   },
   {
     key: 'memory',
@@ -39,7 +41,7 @@ export const appRouteConfigs: AppRouteConfig[] = [
     title: '记忆管理页',
     description: '记忆列表、筛选、编辑和清理能力的接入区域，后续由 C 推进。',
     icon: <DatabaseOutlined />,
-    element: <MemoryPage />,
+    element: <MemoryRoutePage />,
   },
   {
     key: 'task',
@@ -48,7 +50,7 @@ export const appRouteConfigs: AppRouteConfig[] = [
     title: '任务页',
     description: '任务创建、任务进度与记忆关联的承接区域，后续由 C 推进。',
     icon: <UnorderedListOutlined />,
-    element: <TaskPage />,
+    element: <TaskRoutePage />,
   },
   {
     key: 'settings',
@@ -57,7 +59,7 @@ export const appRouteConfigs: AppRouteConfig[] = [
     title: '系统配置页',
     description: '本地联调配置与环境接入面，后续由 C 在此补充可配置项。',
     icon: <SettingOutlined />,
-    element: <SettingsPage />,
+    element: <SettingsRoutePage />,
   },
 ]
 

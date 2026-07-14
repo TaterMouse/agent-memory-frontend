@@ -125,7 +125,7 @@ export default function ChatPage() {
       }
     >
       <PageSection>
-        <Space direction="vertical" size={16} style={{ display: 'flex' }}>
+        <Space orientation="vertical" size={16} style={{ display: 'flex' }}>
           <ChatMessageList messages={messages} />
           <ChatInputPanel value={inputValue} onChange={setInputValue} onSend={handleSend} loading={sending} />
         </Space>

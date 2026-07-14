@@ -10,7 +10,7 @@ export function ConfigForm({ initialValues, onSubmit }: ConfigFormProps) {
   const [form] = Form.useForm<AppConfig>()
 
   return (
-    <Card bordered={false} title="系统配置">
+    <Card variant="borderless" title="系统配置">
       <Form form={form} layout="vertical" initialValues={initialValues} onFinish={onSubmit}>
         <Form.Item
           label="Base URL"

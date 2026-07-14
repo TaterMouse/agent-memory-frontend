@@ -1,4 +1,4 @@
-import { Card, Input, Select, Space } from 'antd'
+import { Card, Flex, Input, Select } from 'antd'
 
 interface MemoryFilterBarProps {
   keyword: string
@@ -14,17 +14,17 @@ export function MemoryFilterBar({
   onTypeChange,
 }: MemoryFilterBarProps) {
   return (
-    <Card bordered={false}>
-      <Space wrap>
+    <Card variant="borderless">
+      <Flex wrap gap={12}>
         <Input
           placeholder="按关键字筛选"
           value={keyword}
-          style={{ width: 240 }}
+          style={{ flex: '1 1 240px', minWidth: 0 }}
           onChange={(event) => onKeywordChange(event.target.value)}
         />
         <Select
           value={type}
-          style={{ width: 180 }}
+          style={{ flex: '0 1 180px', minWidth: 140 }}
           onChange={onTypeChange}
           options={[
             { label: '全部类型', value: 'all' },
@@ -35,7 +35,7 @@ export function MemoryFilterBar({
             { label: '约束', value: 'constraint' },
           ]}
         />
-      </Space>
+      </Flex>
     </Card>
   )
 }
