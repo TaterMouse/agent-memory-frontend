@@ -1,7 +1,7 @@
 # agent-memory-frontend
 
 3 人协作的暑期实训前端项目，当前采用 `React + Vite + TypeScript + Ant Design + Axios + Zustand`。  
-当前阶段的目标不是重写业务，而是把多人协作底座、目录边界和公共层先稳定下来。
+当前处于多人协作后的集成阶段：公共层与页面骨架已经稳定，Chat 开始接入真实接口，Memory / Task 仍在逐步替换 mock 数据。
 
 ## 快速开始
 
@@ -15,11 +15,16 @@ pnpm dev
 ```bash
 pnpm build
 pnpm lint
+pnpm test
+pnpm check
 ```
 
 默认本地环境变量：
 
 - `VITE_API_BASE_URL`：后端服务地址
+- `VITE_API_TIMEOUT_MS`：接口超时时间，默认 `10000`
+
+`pnpm check` 会依次执行 lint、测试和生产构建，建议在提交 PR 前运行。
 
 ## 当前目录结构
 

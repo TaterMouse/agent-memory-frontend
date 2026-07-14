@@ -35,3 +35,19 @@ a {
 code {
   font-family: 'Cascadia Code', Consolas, monospace;
 }
+
+.page-container-extra {
+  flex-shrink: 0;
+  max-width: 100%;
+}
+
+.page-container-extra .ant-space {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+@media (max-width: 767px) {
+  .page-container-extra .ant-space {
+    justify-content: flex-start;
+  }
+}

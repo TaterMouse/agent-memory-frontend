@@ -3,7 +3,11 @@ import type { MenuProps } from 'antd'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { menuRouteConfigs } from '@/router/route-config'
 
-export function SidebarMenu() {
+interface SidebarMenuProps {
+  onNavigate?: () => void
+}
+
+export function SidebarMenu({ onNavigate }: SidebarMenuProps) {
   const location = useLocation()
   const navigate = useNavigate()
   const items: MenuProps['items'] = menuRouteConfigs.map((route) => ({
@@ -26,7 +30,10 @@ export function SidebarMenu() {
         mode="inline"
         selectedKeys={[location.pathname]}
         items={items}
-        onClick={({ key }) => navigate(key)}
+        onClick={({ key }) => {
+          navigate(key)
+          onNavigate?.()
+        }}
       />
     </div>
   )

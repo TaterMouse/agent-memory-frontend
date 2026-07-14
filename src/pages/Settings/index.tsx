@@ -2,7 +2,7 @@ import { ConfigForm } from '@/components/business/ConfigForm'
 import { PageContainer } from '@/components/common'
 import { useAppStore } from '@/store'
 import { showSuccessMessage } from '@/utils/feedback'
-import type { AppConfig } from '@/api/types'
+import { normalizeAppConfig } from '@/utils/config'
 
 export default function SettingsPage() {
   const appConfig = useAppStore((state) => state.config)
@@ -16,16 +16,7 @@ export default function SettingsPage() {
       <ConfigForm
         initialValues={appConfig}
         onSubmit={(values) => {
-          // 保存前统一trim
-          const normalizedValues: AppConfig = {
-            baseUrl: (values.baseUrl ?? '').trim(),
-            userId: (values.userId ?? '').trim(),
-            sceneId: (values.sceneId ?? '').trim(),
-            agentId: (values.agentId ?? '').trim(),
-            apiKey: (values.apiKey ?? '').trim(),
-          }
-
-          setConfig(normalizedValues)
+          setConfig(normalizeAppConfig(values))
           showSuccessMessage('配置已保存到本地。')
         }}
       />

@@ -9,8 +9,8 @@ interface ChatInputPanelProps {
 
 export function ChatInputPanel({ value, loading, onChange, onSend }: ChatInputPanelProps) {
   return (
-    <Card bordered={false} title="发送消息">
-      <Space direction="vertical" size={12} style={{ display: 'flex' }}>
+    <Card variant="borderless" title="发送消息">
+      <Space orientation="vertical" size={12} style={{ display: 'flex' }}>
         <Input.TextArea
           rows={4}
           placeholder="输入本轮消息，后续可接大模型接口。"

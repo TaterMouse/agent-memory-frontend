@@ -22,7 +22,7 @@ export default function MemoryPage() {
       title="记忆管理页"
       description="这里保留给记忆列表、筛选、编辑和清理能力。A 已统一好筛选区和空状态模式，后续由 C 继续接真实接口。"
     >
-      <Space direction="vertical" size={16} style={{ display: 'flex' }}>
+      <Space orientation="vertical" size={16} style={{ display: 'flex' }}>
         <MemoryFilterBar
           keyword={keyword}
           type={type}

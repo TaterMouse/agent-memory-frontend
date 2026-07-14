@@ -1,3 +1,5 @@
+import { ApiError } from '@/api/errors'
+
 export interface ApiResponse<T> {
   code: number
   message?: string
@@ -112,28 +114,48 @@ export interface TaskCreatePayload {
 
 export interface TaskInfo {
   task_id: string
-  status: string
+  status: TaskStatus
 }
+
+export type TaskStatus = 'pending' | 'in_progress' | 'completed'
 
 export interface TaskProgressResult {
   task_id: string
-  status: string
+  status: TaskStatus
   completed_count: number
   pending_count: number
   related_memory_count: number
 }
 
 export interface TaskProgressUpdatePayload {
-  status?: 'pending' | 'in_progress' | 'completed' | string
+  status?: TaskStatus
   progress?: string
   completed_items?: string[]
   pending_items?: string[]
 }
 
-export function unwrapApiResponse<T>(payload: ApiResponse<T>) {
-  if (payload.code !== 0) {
-    throw new Error(payload.message || '接口请求失败')
+export function unwrapApiResponse<T>(payload: unknown) {
+  if (typeof payload !== 'object' || payload === null || !('code' in payload)) {
+    throw new ApiError('接口响应格式不正确', { errorCode: 'INVALID_RESPONSE' })
   }
 
-  return payload.data
+  const response = payload as Partial<ApiResponse<T>>
+
+  if (typeof response.code !== 'number') {
+    throw new ApiError('接口响应格式不正确', { errorCode: 'INVALID_RESPONSE' })
+  }
+
+  if (response.code !== 0) {
+    throw new ApiError(response.message || '接口请求失败', {
+      code: response.code,
+      errorCode: response.error_code,
+      traceId: response.trace_id,
+    })
+  }
+
+  if (!('data' in response)) {
+    throw new ApiError('接口响应缺少 data 字段', { errorCode: 'INVALID_RESPONSE' })
+  }
+
+  return response.data as T
 }
