@@ -20,10 +20,10 @@ export function SidebarMenu({ onNavigate }: SidebarMenuProps) {
     <div style={{ paddingTop: 16 }}>
       <div style={{ padding: '0 16px 16px' }}>
         <Typography.Title level={5} style={{ margin: 0 }}>
-          Frontend Shell
+          Agent Memory
         </Typography.Title>
         <Typography.Paragraph type="secondary" style={{ margin: '8px 0 0' }}>
-          A 负责导航与通用层，B/C 基于既有页面骨架继续接业务。
+          对话、记忆、任务与场景配置的一体化工作台。
         </Typography.Paragraph>
       </div>
       <Menu

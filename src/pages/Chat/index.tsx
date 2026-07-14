@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Button, Space, Tag } from 'antd'
+import { Alert, Button, Space, Tag, Typography } from 'antd'
 import type { ChatMessage } from '@/api/types'
 import { ChatInputPanel } from '@/components/business/ChatInputPanel'
 import { ChatMessageList } from '@/components/business/ChatMessageList'
@@ -8,22 +8,27 @@ import { createSession, closeSession } from '@/api/modules/session'
 import { getMemoryContext, writeMemories } from '@/api/modules/memory'
 import { useAppStore } from '@/store'
 import { useSessionStore } from '@/store/sessionStore'
-import { mockMessages } from '@/mock/chat.mock'
+import { useTaskStore } from '@/store/taskStore'
 import { showSuccessMessage, showWarningMessage, showErrorMessage } from '@/utils/feedback'
 
 export default function ChatPage() {
-  const [messages, setMessages] = useState<ChatMessage[]>(mockMessages)
+  const [messages, setMessages] = useState<ChatMessage[]>([])
   const [inputValue, setInputValue] = useState('')
   const [sending, setSending] = useState(false)
+  const [memoryContext, setMemoryContext] = useState('')
+  const [memoryCount, setMemoryCount] = useState(0)
 
   const { config } = useAppStore()
   const { sessionId, status, setSession } = useSessionStore()
+  const activeTaskId = useTaskStore((state) => state.activeTaskId)
 
   const handleCreateSession = async () => {
     try {
       const session = await createSession({
         user_id: config.userId,
         agent_id: config.agentId || 'default_agent',
+        scene_id: config.sceneId || undefined,
+        task_id: activeTaskId || undefined,
       })
       setSession(session.session_id, session.status)
       showSuccessMessage('会话创建成功')
@@ -61,41 +66,49 @@ export default function ChatPage() {
     setInputValue('')
     setSending(true)
 
-    // 1️⃣ 检索历史记忆（和用户当前问题相关的）
+    let formattedContext = ''
+    let retrievedMemoryCount = 0
     try {
       const memoryResult = await getMemoryContext({
         query: userContent,
         user_id: config.userId,
+        scene_id: config.sceneId || undefined,
+        task_id: activeTaskId || undefined,
+        max_tokens: 3000,
+        group_by_type: true,
       })
-      if (memoryResult.memory_count > 0) {
-        setMessages((current) => [
-          ...current,
-          { role: 'system', content: `🧠 找到 ${memoryResult.memory_count} 条相关记忆` },
-        ])
-      }
+      formattedContext = memoryResult.formatted_text
+      retrievedMemoryCount = memoryResult.memory_count
+      setMemoryContext(memoryResult.formatted_text)
+      setMemoryCount(memoryResult.memory_count)
     } catch {
-      // 后端没启动时不影响使用，跳过记忆检索
+      setMemoryContext('')
+      setMemoryCount(0)
+      showWarningMessage('历史记忆检索失败，本轮将不使用记忆上下文')
     }
 
-    // 2️⃣ 添加用户消息
+    const userMessage: ChatMessage = { role: 'user', content: userContent }
     setMessages((current) => [
       ...current,
-      { role: 'user', content: userContent },
+      userMessage,
     ])
 
-    // 3️⃣ 模拟 AI 回复（后续接入真实大模型接口）
     await new Promise((resolve) => setTimeout(resolve, 800))
-    setMessages((current) => [
-      ...current,
-      { role: 'assistant', content: 'AI 回复待接入 — 后续将调用大模型接口。' },
-    ])
+    const assistantMessage: ChatMessage = {
+      role: 'assistant',
+      content: formattedContext
+        ? `已读取 ${retrievedMemoryCount} 条历史记忆。真实大模型回复接口待后端提供。`
+        : '本轮未获取到历史记忆。真实大模型回复接口待后端提供。',
+    }
+    setMessages((current) => [...current, assistantMessage])
 
-    // 4️⃣ 写入本轮对话到记忆
     try {
       await writeMemories({
         user_id: config.userId,
+        scene_id: config.sceneId || undefined,
+        task_id: activeTaskId || undefined,
         session_id: sessionId,
-        messages: [{ role: 'user', content: userContent }],
+        messages: [userMessage, assistantMessage],
       })
     } catch {
       showWarningMessage('记忆写入失败，但消息已发送')
@@ -106,8 +119,8 @@ export default function ChatPage() {
 
   return (
     <PageContainer
-      title="聊天页"
-      description="这里是聊天主流程的落点。A 已经把页面容器、输入区和消息区接好，后续由 B 继续联通会话、模型回复和记忆写入。"
+      title="智能对话"
+      description="创建业务会话后发送消息，系统会检索相关历史记忆，并把本轮对话写回长期记忆。"
       extra={
         <Space>
           {sessionId ? (
@@ -115,6 +128,7 @@ export default function ChatPage() {
           ) : (
             <Tag>未连接</Tag>
           )}
+          {activeTaskId ? <Tag color="gold">任务: {activeTaskId.slice(0, 8)}...</Tag> : null}
           <Button onClick={handleCreateSession} disabled={!!sessionId}>
             创建会话
           </Button>
@@ -124,12 +138,25 @@ export default function ChatPage() {
         </Space>
       }
     >
+      <Alert
+        type="warning"
+        showIcon
+        title="当前使用演示助手回复"
+        description="会话、记忆检索和记忆写入已接真实后端；大模型对话接口尚未在接口文档中提供。"
+      />
       <PageSection>
         <Space orientation="vertical" size={16} style={{ display: 'flex' }}>
           <ChatMessageList messages={messages} />
           <ChatInputPanel value={inputValue} onChange={setInputValue} onSend={handleSend} loading={sending} />
         </Space>
       </PageSection>
+      {memoryContext ? (
+        <PageSection title={`本轮记忆上下文（${memoryCount} 条）`}>
+          <Typography.Paragraph style={{ whiteSpace: 'pre-wrap', margin: 0 }} copyable>
+            {memoryContext}
+          </Typography.Paragraph>
+        </PageSection>
+      ) : null}
     </PageContainer>
   )
 }

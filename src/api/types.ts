@@ -33,6 +33,19 @@ export interface AgentRegisterResult {
   api_key_prefix: string
 }
 
+export type AgentRotateKeyResult = AgentRegisterResult
+
+export interface SceneCreatePayload {
+  scene_name: string
+  description?: string
+}
+
+export interface SceneCreateResult {
+  scene_id?: string
+  scene_name?: string
+  description?: string
+}
+
 export interface SessionCreatePayload {
   user_id: string
   agent_id: string
@@ -85,6 +98,8 @@ export interface MemorySearchPayload {
   memory_types?: string[]
   top_k?: number
   rerank?: boolean
+  time_start?: string
+  time_end?: string
 }
 
 export interface MemoryItem {
@@ -125,6 +140,13 @@ export interface TaskProgressResult {
   completed_count: number
   pending_count: number
   related_memory_count: number
+}
+
+export interface MemoryImportRecord {
+  content: string
+  role?: ChatMessage['role']
+  scene_id?: string
+  task_id?: string
 }
 
 export interface TaskProgressUpdatePayload {
