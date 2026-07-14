@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { Button, Card, Form, Input, Space } from 'antd'
 import type { AppConfig } from '@/api/types'
 
@@ -8,6 +9,10 @@ interface ConfigFormProps {
 
 export function ConfigForm({ initialValues, onSubmit }: ConfigFormProps) {
   const [form] = Form.useForm<AppConfig>()
+
+  useEffect(() => {
+    form.setFieldsValue(initialValues)
+  }, [form, initialValues])
 
   return (
     <Card variant="borderless" title="系统配置">
@@ -40,7 +45,7 @@ export function ConfigForm({ initialValues, onSubmit }: ConfigFormProps) {
           <Input placeholder="agent_abc" />
         </Form.Item>
         <Form.Item label="API Key" name="apiKey">
-          <Input placeholder="mem_xxxx" />
+          <Input.Password placeholder="mem_xxxx" />
         </Form.Item>
         <Space>
           <Button type="primary" htmlType="submit">

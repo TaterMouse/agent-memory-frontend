@@ -1,7 +1,7 @@
 # agent-memory-frontend
 
 3 人协作的暑期实训前端项目，当前采用 `React + Vite + TypeScript + Ant Design + Axios + Zustand`。  
-当前处于多人协作后的集成阶段：公共层与页面骨架已经稳定，Chat 开始接入真实接口，Memory / Task 仍在逐步替换 mock 数据。
+当前处于前后端联调阶段：公共层与页面骨架已经稳定，Chat、Memory、Task、Settings 已接入接口封装；记忆管理支持 JSON/CSV 导入。真实大模型回复、会话列表和大批量导入仍需后端补充接口。
 
 ## 快速开始
 
@@ -37,7 +37,7 @@ src/
   constants/            路由、存储键、常量
   hooks/                对 API/store 的轻量封装
   layouts/              App 壳层、导航布局
-  mock/                 当前骨架阶段使用的占位数据
+  mock/                 保留的演示数据（核心页面不再依赖）
   pages/
     Chat/               B 负责主流程
     Memory/             C 负责
