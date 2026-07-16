@@ -16,7 +16,7 @@ export interface AppConfig {
   apiKey: string
 }
 
-export interface ChatMessage {
+export interface DialogueMessage {
   role: 'user' | 'assistant' | 'system'
   content: string
 }
@@ -46,18 +46,6 @@ export interface SceneCreateResult {
   description?: string
 }
 
-export interface SessionCreatePayload {
-  user_id: string
-  agent_id: string
-  scene_id?: string
-  task_id?: string
-}
-
-export interface SessionInfo {
-  session_id: string
-  status: string
-}
-
 export interface MemoryContextPayload {
   query: string
   user_id: string
@@ -70,6 +58,8 @@ export interface MemoryContextPayload {
 export interface MemoryContextResult {
   formatted_text: string
   memory_count: number
+  estimated_tokens?: number
+  fragments?: Array<Record<string, unknown>>
 }
 
 export interface MemoryWritePayload {
@@ -77,7 +67,15 @@ export interface MemoryWritePayload {
   scene_id?: string
   task_id?: string
   session_id?: string
-  messages: ChatMessage[]
+  interaction_type?: 'dialogue' | 'session' | 'task_process'
+  messages?: DialogueMessage[]
+  session_time?: string
+  session_source?: string
+  session_summary?: string
+  task_goal?: string
+  task_progress?: string
+  task_result?: string
+  metadata?: Record<string, unknown>
 }
 
 export interface MemoryWriteItem {
@@ -95,8 +93,11 @@ export interface MemorySearchPayload {
   user_id: string
   scene_id?: string
   task_id?: string
+  session_id?: string
   memory_types?: string[]
+  status?: string[]
   top_k?: number
+  max_content_length?: number
   rerank?: boolean
   time_start?: string
   time_end?: string
@@ -106,8 +107,19 @@ export interface MemoryItem {
   memory_id: string
   content: string
   memory_type?: string
+  status?: string
   scene_id?: string
   task_id?: string
+  session_id?: string
+  summary?: string
+  key_points?: string[]
+  tags?: string[]
+  entities?: string[]
+  importance?: number
+  confidence?: number
+  agent_id?: string
+  source_type?: string
+  version?: number
   relevance_score?: number
   created_at?: string
   updated_at?: string
@@ -118,6 +130,13 @@ export interface MemorySearchResult {
   results: MemoryItem[]
   total_candidates: number
   elapsed_ms: number
+}
+
+export interface MemoryListResult {
+  items: MemoryItem[]
+  total: number
+  page: number
+  page_size: number
 }
 
 export interface TaskCreatePayload {
@@ -144,9 +163,15 @@ export interface TaskProgressResult {
 
 export interface MemoryImportRecord {
   content: string
-  role?: ChatMessage['role']
+  role?: DialogueMessage['role']
   scene_id?: string
   task_id?: string
+  session_time?: string
+  session_source?: string
+  session_summary?: string
+  task_goal?: string
+  task_progress?: string
+  task_result?: string
 }
 
 export interface TaskProgressUpdatePayload {

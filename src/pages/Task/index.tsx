@@ -92,7 +92,7 @@ export default function TaskPage() {
   return (
     <PageContainer
       title="任务管理"
-      description="创建长周期任务、查询执行进度，并将当前任务关联到聊天记忆。"
+      description="创建长周期任务、维护执行进度，并将目标、进展和结果沉淀为任务过程记忆。"
       extra={
         <Space>
           <Button type="primary" onClick={() => setCreateOpen(true)}>创建任务</Button>
