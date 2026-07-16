@@ -3,6 +3,7 @@ import type {
   MemoryContextPayload,
   MemoryContextResult,
   MemoryItem,
+  MemoryListResult,
   MemorySearchPayload,
   MemorySearchResult,
   MemoryWritePayload,
@@ -33,11 +34,13 @@ export function writeMemories(payload: MemoryWritePayload) {
   })
 }
 
-export function listMemories(userId: string) {
-  return request<MemoryItem[]>({
+export async function listMemories(userId: string) {
+  const result = await request<MemoryItem[] | MemoryListResult>({
     url: `/api/v1/memory/list?user_id=${encodeURIComponent(userId)}`,
     method: 'POST',
   })
+
+  return Array.isArray(result) ? result : result.items
 }
 
 export function updateMemory(memoryId: string, content: string) {

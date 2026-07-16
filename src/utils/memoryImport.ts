@@ -1,6 +1,6 @@
-import type { ChatMessage, MemoryImportRecord } from '@/api/types'
+import type { DialogueMessage, MemoryImportRecord } from '@/api/types'
 
-const supportedRoles = new Set<ChatMessage['role']>(['user', 'assistant', 'system'])
+const supportedRoles = new Set<DialogueMessage['role']>(['user', 'assistant', 'system'])
 
 function normalizeRecord(value: unknown, index: number): MemoryImportRecord {
   if (typeof value !== 'object' || value === null) {
@@ -8,22 +8,44 @@ function normalizeRecord(value: unknown, index: number): MemoryImportRecord {
   }
 
   const record = value as Record<string, unknown>
-  const content = typeof record.content === 'string' ? record.content.trim() : ''
+  const optionalString = (key: string) =>
+    typeof record[key] === 'string' ? record[key].trim() || undefined : undefined
+  const content = optionalString('content')
+    ?? optionalString('session_summary')
+    ?? optionalString('task_progress')
+    ?? optionalString('task_goal')
+    ?? optionalString('task_result')
+    ?? ''
   if (!content) {
     throw new Error(`第 ${index + 1} 条记录缺少 content`)
   }
 
   const role = typeof record.role === 'string' ? record.role.trim() : ''
-  if (role && !supportedRoles.has(role as ChatMessage['role'])) {
+  if (role && !supportedRoles.has(role as DialogueMessage['role'])) {
     throw new Error(`第 ${index + 1} 条记录的 role 不合法`)
   }
 
-  return {
+  const normalized: MemoryImportRecord = {
     content,
-    role: (role as ChatMessage['role']) || 'user',
-    scene_id: typeof record.scene_id === 'string' ? record.scene_id.trim() || undefined : undefined,
-    task_id: typeof record.task_id === 'string' ? record.task_id.trim() || undefined : undefined,
+    role: (role as DialogueMessage['role']) || 'user',
+    scene_id: optionalString('scene_id'),
+    task_id: optionalString('task_id'),
   }
+
+  const extraFields = [
+    'session_time',
+    'session_source',
+    'session_summary',
+    'task_goal',
+    'task_progress',
+    'task_result',
+  ] as const
+  extraFields.forEach((field) => {
+    const value = optionalString(field)
+    if (value) normalized[field] = value
+  })
+
+  return normalized
 }
 
 function parseCsvRow(line: string) {

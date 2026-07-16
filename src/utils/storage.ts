@@ -5,7 +5,7 @@ import { normalizeAppConfig } from '@/utils/config'
 const defaultConfig: AppConfig = {
   baseUrl: import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000',
   userId: 'user_001',
-  sceneId: 'chat',
+  sceneId: 'memory-console',
   agentId: '',
   apiKey: '',
 }

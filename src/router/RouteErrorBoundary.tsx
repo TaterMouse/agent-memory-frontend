@@ -28,7 +28,7 @@ export function RouteErrorBoundary() {
       title={title}
       subtitle={subtitle}
       extra={
-        <Button type="primary" onClick={() => navigate(appRoutes.chat)}>
+        <Button type="primary" onClick={() => navigate(appRoutes.overview)}>
           返回首页
         </Button>
       }

@@ -1,132 +1,106 @@
 # agent-memory-frontend
 
-3 人协作的暑期实训前端项目，当前采用 `React + Vite + TypeScript + Ant Design + Axios + Zustand`。  
-当前处于前后端联调阶段：公共层与页面骨架已经稳定，Chat、Memory、Task、Settings 已接入接口封装；记忆管理支持 JSON/CSV 导入。真实大模型回复、会话列表和大批量导入仍需后端补充接口。
+面向多智能体业务的记忆管理控制台，基于 `React + Vite + TypeScript + Ant Design + Axios + Zustand`。
 
-## 快速开始
+当前产品不提供实时 AI 对话。系统负责导入历史对话、会话摘要和任务过程，完成记忆写入、查询、检索、上下文返回及任务管理，并以控制台形式展示运行概览。
+
+## 安装与启动
+
+项目要求 Node.js，并通过 Corepack 使用仓库指定的 pnpm 版本：
 
 ```bash
-pnpm install
-pnpm dev
+corepack enable
+corepack pnpm install
+corepack pnpm dev
 ```
+
+启动后访问 `http://localhost:5173`。如果系统已经能直接识别 `pnpm`，也可以省略 `corepack`。
 
 常用命令：
 
 ```bash
-pnpm build
-pnpm lint
-pnpm test
-pnpm check
+corepack pnpm lint
+corepack pnpm test
+corepack pnpm build
+corepack pnpm check
 ```
 
-默认本地环境变量：
+`check` 会依次执行代码规范检查、测试和生产构建，建议提交 PR 前运行。
 
-- `VITE_API_BASE_URL`：后端服务地址
-- `VITE_API_TIMEOUT_MS`：接口超时时间，默认 `10000`
+## 环境配置
 
-`pnpm check` 会依次执行 lint、测试和生产构建，建议在提交 PR 前运行。
+开发环境配置位于 `.env.development`：
 
-## 当前目录结构
+- `VITE_API_BASE_URL`：后端服务地址。
+- `VITE_API_TIMEOUT_MS`：请求超时时间，当前为 `30000` 毫秒。
+- `VITE_APP_TITLE`：页面标题。
+
+也可以在系统设置页覆盖 Base URL、用户、场景、Agent ID 和 API Key。配置保存在浏览器本地。
+
+## 页面与功能
+
+| 页面 | 路径 | 当前能力 |
+| --- | --- | --- |
+| 系统总览 | `/` | 关键指标、功能流程、记忆分布和运行概览 |
+| 数据写入 | `/ingestion` | JSON/CSV 导入历史对话、会话摘要和任务过程 |
+| 记忆管理 | `/memory` | 记忆列表、筛选、编辑和删除 |
+| 多信号检索 | `/retrieval` | 类型、状态、数量和重排条件检索 |
+| 生成与去重 | `/generation` | 生成、融合、冲突处理流程展示 |
+| 上下文返回 | `/context` | 请求并预览供智能体使用的结构化上下文 |
+| 任务管理 | `/task` | 任务创建、进度查询和状态更新 |
+| 接口监控 | `/monitoring` | 健康检查、联调状态和异常提示 |
+| 系统设置 | `/settings` | 联调地址及身份配置 |
+
+总览、生成流程和部分监控指标目前使用演示数据；写入、列表、检索、上下文、任务和健康检查通过 `src/api` 对接后端。
+
+## 目录结构
 
 ```text
 src/
-  api/                  接口请求封装、模块 API、类型定义
+  api/                  请求客户端、接口模块和数据类型
   components/
-    business/           贴近业务的组件，允许按页面继续扩展
-    common/             A 维护的通用组件与统一状态组件
-  constants/            路由、存储键、常量
-  hooks/                对 API/store 的轻量封装
-  layouts/              App 壳层、导航布局
-  mock/                 保留的演示数据（核心页面不再依赖）
-  pages/
-    Chat/               B 负责主流程
-    Memory/             C 负责
-    Task/               C 负责
-    Settings/           C 负责
-  router/               路由定义、菜单元信息、错误路由兜底
-  store/                Zustand 状态
-  utils/                错误处理、提示、存储、格式化工具
+    business/           可复用业务组件
+    common/             页面容器、状态、错误和确认组件
+  constants/            路由与业务常量
+  hooks/                API 与状态的轻量封装
+  layouts/              控制台壳层和侧边导航
+  pages/                各业务页面
+  router/               路由、菜单元信息和异常路由
+  store/                Zustand 全局状态
+  utils/                配置、导入解析、提示和格式化工具
 ```
 
-## 分支协作规则
+## 分支规则
 
-- `main`：稳定可展示分支，只接收经过验证的合并结果。
-- `dev`：团队日常集成分支，A 负责先保证可运行、可构建、可合并。
-- `feature/*`：个人功能分支，建议命名为 `feature/b-chat-stream`、`feature/c-memory-list` 这类可读名称。
+- `main`：稳定、可演示版本，只接收经过验证的里程碑。
+- `dev`：日常集成分支，所有功能先合入这里统一验证。
+- `feature/*` 或 `codex/*`：从最新 `dev` 创建的功能分支，不直接在 `main` 开发。
 
 推荐流程：
 
-1. 从 `dev` 拉取最新代码。
-2. 新建自己的 `feature/*` 分支开发。
-3. 本地先跑 `pnpm build` 和 `pnpm lint`。
-4. 提交 Pull Request 到 `dev`。
-5. A 完成集成检查后再合并。
-6. 里程碑稳定后，再由 `dev` 合并到 `main`。
+1. 同步最新 `dev`。
+2. 创建独立功能分支。
+3. 完成开发并运行 `corepack pnpm check`。
+4. 提交 Pull Request，目标分支选择 `dev`。
+5. 检查改动范围、接口兼容和验证结果后合并。
+6. 阶段版本稳定后，再由 `dev` 提交 PR 到 `main`。
 
-## A / B / C 协作边界
+## 开发与维护方式
 
-### A 负责
+当前前端由项目负责人统一开发和维护，不再按 A/B/C 划分页面或目录。功能实现、公共层调整、接口适配和集成验证均以完整产品为单位推进。
 
-- `src/router`
-- `src/layouts`
-- `src/store`
-- `src/api`
-- `src/components/common`
-- `README.md`
-- `docs/collaboration.md`
+- 页面功能统一放在 `src/pages`，公共能力优先沉淀到 `src/components/common`、`src/api`、`src/store` 和 `src/utils`。
+- 新功能从最新 `dev` 创建独立分支，完成后通过 Pull Request 合入 `dev`，不要直接在 `main` 上开发。
+- 修改接口字段时，先更新 `src/api/types.ts` 和对应接口模块，再调整页面展示和交互。
+- 后端尚未提供的能力可以保留说明、流程或演示状态，但必须明确标注，避免与真实接口数据混淆。
+- 产品不包含实时 AI 聊天，重点是记忆写入、管理、检索、生成去重、上下文返回及运行管理。
 
-### B 主要负责
-
-- `src/pages/Chat`
-- `src/components/business/ChatInputPanel`
-- `src/components/business/ChatMessageList`
-- 与聊天主流程直接相关的 hooks / service / API 接入代码
-
-### C 主要负责
-
-- `src/pages/Memory`
-- `src/pages/Task`
-- `src/pages/Settings`
-- `src/components/business/MemoryCard`
-- `src/components/business/MemoryFilterBar`
-- `src/components/business/TaskProgressPanel`
-- `src/components/business/ConfigForm`
-
-### 不建议 B / C 随意改动
-
-- `src/router`
-- `src/layouts`
-- `src/store`
-- `src/api/request.ts`
-- `src/api/client.ts`
-- `src/components/common`
-
-如果确实需要改这些目录，建议先和 A 对齐，再改。
-
-## 页面开发建议
-
-### B 从哪里开始
-
-- 优先从 `src/pages/Chat/index.tsx` 开始接真实聊天流程。
-- 可逐步替换 `src/mock/chat.mock.ts`，并补 `service.ts` / hooks。
-- 尽量复用现有 `PageContainer`、`PageSection`、统一提示工具，不要单独造一套页面壳。
-
-### C 从哪里开始
-
-- `src/pages/Memory/index.tsx`：先接记忆列表、搜索、筛选。
-- `src/pages/Task/index.tsx`：再接任务创建和进度查询。
-- `src/pages/Settings/index.tsx`：最后补更多联调配置和保存规则。
+更详细的开发约定见 [开发流程文档](./docs/collaboration.md)。
 
 ## Pull Request 建议
 
-- PR 尽量只做一类事情，不要把“路由整理 + 聊天业务 + UI 重构”混在一起。
-- 标题建议带角色和范围，例如：`feat(B): connect chat session flow`
-- 描述中至少写清：
-  - 改了哪些目录
-  - 是否影响公共层
-  - 本地是否通过 `pnpm build` / `pnpm lint`
-  - 是否需要 A 协助联调或二次集成
-
-## 协作文档
-
-- 详细协作边界、目录建议和提交流程见 [docs/collaboration.md](./docs/collaboration.md)
+- 一个 PR 只处理一个清晰主题，避免混入无关改动。
+- 标题可使用中文，例如：`feat：完善记忆控制台与浏览器导入流程`。
+- 描述写清改动内容、影响目录、后端依赖和验证结果。
+- PR 目标通常是 `dev`，不要直接选择 `main`。
+- 合并前至少确认无冲突，且 lint、test、build 全部通过。
