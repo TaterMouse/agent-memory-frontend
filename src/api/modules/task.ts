@@ -1,5 +1,10 @@
 import { request } from '@/api/request'
-import type { TaskCreatePayload, TaskInfo, TaskProgressResult } from '@/api/types'
+import type {
+  TaskCreatePayload,
+  TaskInfo,
+  TaskProgressResult,
+  TaskProgressUpdatePayload,
+} from '@/api/types'
 
 export function createTask(payload: TaskCreatePayload) {
   return request<TaskInfo>({
@@ -9,7 +14,7 @@ export function createTask(payload: TaskCreatePayload) {
   })
 }
 
-export function updateTaskProgress(taskId: string, payload: Record<string, unknown>) {
+export function updateTaskProgress(taskId: string, payload: TaskProgressUpdatePayload) {
   return request<string>({
     url: `/api/v1/task/${taskId}`,
     method: 'PUT',

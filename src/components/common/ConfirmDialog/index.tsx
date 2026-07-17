@@ -3,7 +3,7 @@ import { Modal } from 'antd'
 interface ConfirmDialogOptions {
   title: string
   content: string
-  onOk: () => void
+  onOk: () => void | Promise<void>
 }
 
 export function openConfirmDialog({ title, content, onOk }: ConfirmDialogOptions) {

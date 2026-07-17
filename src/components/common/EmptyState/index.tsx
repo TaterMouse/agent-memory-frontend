@@ -9,7 +9,7 @@ interface EmptyStateProps {
 
 export function EmptyState({ title, description, action }: EmptyStateProps) {
   return (
-    <Space direction="vertical" size={12} style={{ display: 'flex', alignItems: 'center' }}>
+    <Space orientation="vertical" size={12} style={{ display: 'flex', alignItems: 'center' }}>
       <Empty description={description} image={Empty.PRESENTED_IMAGE_SIMPLE} />
       {title ? (
         <Typography.Text strong style={{ marginTop: -12 }}>

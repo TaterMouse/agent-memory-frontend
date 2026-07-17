@@ -26,7 +26,7 @@ export function FeedbackState({
       <PageSection>
         <Space
           align="center"
-          direction="vertical"
+          orientation="vertical"
           size={12}
           style={{ display: 'flex', justifyContent: 'center', minHeight: 220 }}
         >

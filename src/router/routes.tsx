@@ -5,9 +5,10 @@ import { appRoutes } from '@/constants/routes'
 import { AppLayout } from '@/layouts/AppLayout'
 import { RouteErrorBoundary } from '@/router/RouteErrorBoundary'
 import { appRouteConfigs } from '@/router/route-config'
+import { CapabilityGuideRoutePage } from '@/router/LazyRoutePages'
 
 const childRoutes = appRouteConfigs.map((route) => {
-  if (route.path === appRoutes.chat) {
+  if (route.path === appRoutes.overview) {
     return {
       index: true,
       element: route.element,
@@ -22,14 +23,18 @@ const childRoutes = appRouteConfigs.map((route) => {
 
 export const appRouter = createBrowserRouter([
   {
-    path: appRoutes.chat,
+    path: appRoutes.overview,
     element: <AppLayout />,
     errorElement: <RouteErrorBoundary />,
     children: [
       ...childRoutes,
       {
+        path: 'capabilities/:capabilityId',
+        element: <CapabilityGuideRoutePage />,
+      },
+      {
         path: 'home',
-        element: <Navigate replace to={appRoutes.chat} />,
+        element: <Navigate replace to={appRoutes.overview} />,
       },
       {
         path: '*',
@@ -39,7 +44,7 @@ export const appRouter = createBrowserRouter([
             subtitle="请检查访问路径是否正确。"
             extra={
               <Button type="primary">
-                <Link to={appRoutes.chat}>返回首页</Link>
+                <Link to={appRoutes.overview}>返回首页</Link>
               </Button>
             }
           />
