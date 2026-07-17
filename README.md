@@ -45,13 +45,27 @@ corepack pnpm check
 | 数据写入 | `/ingestion` | JSON/CSV 导入历史对话、会话摘要和任务过程 |
 | 记忆管理 | `/memory` | 记忆列表、筛选、编辑和删除 |
 | 多信号检索 | `/retrieval` | 类型、状态、数量和重排条件检索 |
-| 生成与去重 | `/generation` | 生成、融合、冲突处理流程展示 |
+| 生成与去重 | `/generation` | 单条/批量文本生成、抽取类型选择、去重融合统计和处理明细 |
 | 上下文返回 | `/context` | 请求并预览供智能体使用的结构化上下文 |
 | 任务管理 | `/task` | 任务创建、进度查询和状态更新 |
 | 接口监控 | `/monitoring` | 健康检查、联调状态和异常提示 |
 | 系统设置 | `/settings` | 联调地址及身份配置 |
 
-总览、生成流程和部分监控指标目前使用演示数据；写入、列表、检索、上下文、任务和健康检查通过 `src/api` 对接后端。
+总览和部分监控指标目前使用演示数据；写入、列表、检索、上下文、单条/批量生成、任务和健康检查通过 `src/api` 对接后端。
+
+## 后端接口覆盖
+
+当前前端已接入以下真实记忆接口：
+
+- `POST /api/v1/memory/write`：写入对话记录、历史会话摘要和任务过程。
+- `POST /api/v1/memory/search`：语义检索、类型与状态过滤、Top-K 和重排。
+- `POST /api/v1/memory/list`：按用户、场景和任务分页查询记忆。
+- `PUT /api/v1/memory/update`：修改内容、摘要、状态、重要性、置信度和标签。
+- `DELETE /api/v1/memory/delete` 与 `POST /api/v1/memory/delete-all`：单条软删除和用户记忆清空。
+- `POST /api/v1/memory/context`：按类型、状态、任务和长度预算生成上下文。
+- `POST /api/v1/memory/generate` 与 `/generate/batch`：单条或最多 50 条文本的结构化记忆生成。
+
+`/memory/async_write` 和 `/memory/generate/async` 仍是后端占位能力，当前前端不启用。冲突列表、人工融合决策、过滤规则和运行日志仍需要后端提供独立管理接口。
 
 ## 目录结构
 

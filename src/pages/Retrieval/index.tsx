@@ -12,6 +12,7 @@ interface RetrievalFormValues {
   query: string
   memoryType: string
   status: string
+  sceneId: string
   sessionId: string
   topK: number
   rerank: boolean
@@ -100,7 +101,7 @@ export default function RetrievalPage() {
       setResult(await searchMemories({
         query: values.query?.trim() || '筛选全部记忆',
         user_id: config.userId,
-        scene_id: config.sceneId || undefined,
+        scene_id: values.sceneId?.trim() || undefined,
         session_id: values.sessionId?.trim() || undefined,
         memory_types: !values.memoryType || values.memoryType === 'all' ? undefined : [values.memoryType],
         status: !values.status || values.status === 'all' ? undefined : [values.status],
@@ -120,7 +121,12 @@ export default function RetrievalPage() {
     <PageContainer
       title={pageMeta.title}
       description={pageMeta.description}
-      extra={<Tag color="blue">Scene：{config.sceneId}</Tag>}
+      extra={
+        <Space>
+          <Tag color="blue">用户：{config.userId}</Tag>
+          <Tag color="cyan">默认检索全部场景</Tag>
+        </Space>
+      }
     >
       <Card className="console-card" variant="borderless">
         <Form<RetrievalFormValues>
@@ -152,6 +158,11 @@ export default function RetrievalPage() {
                 <Select options={[{ value: 'all', label: '全部' }, { value: 'active', label: '有效' }, { value: 'archived', label: '已归档' }]} />
               </Form.Item>
             </Col> : null}
+            <Col xs={12} sm={8} lg={4}>
+              <Form.Item name="sceneId" label="Scene ID（可选）">
+                <Input placeholder="留空检索全部场景" />
+              </Form.Item>
+            </Col>
             <Col xs={12} sm={8} lg={4}>
               <Form.Item name="sessionId" label="Session ID（可选）">
                 <Input placeholder="sess_xxx" />

@@ -1,15 +1,24 @@
 import { DeleteOutlined, EditOutlined, ReloadOutlined } from '@ant-design/icons'
-import { Button, Card, Col, Flex, Input, Modal, Row, Space, Table, Tag, Typography } from 'antd'
+import { Button, Card, Col, Flex, Form, Input, InputNumber, Modal, Row, Select, Space, Table, Tag, Typography } from 'antd'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import type { MemoryItem } from '@/api/types'
-import { deleteAllMemories, deleteMemory, listMemories, searchMemories, updateMemory } from '@/api/modules/memory'
+import { deleteMemory, listMemories, searchMemories, updateMemory } from '@/api/modules/memory'
 import { MemoryFilterBar } from '@/components/business/MemoryFilterBar'
 import { FeedbackState, PageContainer, openConfirmDialog } from '@/components/common'
 import { useAppStore, useMemoryStore } from '@/store'
-import { showErrorMessage, showSuccessMessage } from '@/utils/feedback'
+import { showErrorMessage, showSuccessMessage, showWarningMessage } from '@/utils/feedback'
 
 type MemoryScope = 'all' | 'user' | 'session' | 'task'
+
+interface MemoryEditValues {
+  content: string
+  summary?: string
+  status?: string
+  importance?: number
+  confidence?: number
+  tags?: string
+}
 
 const scopeMeta: Record<MemoryScope, { title: string; description: string; tableTitle: string }> = {
   all: {
@@ -42,6 +51,7 @@ function getMemoryScope(pathname: string): MemoryScope {
 }
 
 export default function MemoryPage() {
+  const [editForm] = Form.useForm<MemoryEditValues>()
   const { pathname } = useLocation()
   const scope = getMemoryScope(pathname)
   const pageMeta = scopeMeta[scope]
@@ -54,26 +64,55 @@ export default function MemoryPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<unknown>(null)
   const [editingMemory, setEditingMemory] = useState<MemoryItem | null>(null)
-  const [editContent, setEditContent] = useState('')
   const [saving, setSaving] = useState(false)
   const [scopeId, setScopeId] = useState('')
+  const [listPage, setListPage] = useState(1)
+  const [listPageSize, setListPageSize] = useState(20)
+  const [listTotal, setListTotal] = useState(0)
+  const [isSearchResult, setIsSearchResult] = useState(false)
+  const [selectedMemoryIds, setSelectedMemoryIds] = useState<string[]>([])
+  const [deleteMode, setDeleteMode] = useState(false)
 
   useEffect(() => {
     setScopeId('')
+    setSelectedMemoryIds([])
+    setDeleteMode(false)
   }, [scope])
 
+  useEffect(() => {
+    setSelectedMemoryIds([])
+    setDeleteMode(false)
+  }, [config.userId])
+
   const visibleMemories = useMemo(() => memories.filter((memory) => {
-    if (scope === 'user') return !memory.session_id && !memory.task_id
+    if (scope === 'user') return true
     if (scope === 'session') return !scopeId.trim() || memory.session_id === scopeId.trim()
     if (scope === 'task') return !scopeId.trim() || memory.task_id === scopeId.trim()
     return true
   }), [memories, scope, scopeId])
 
-  const loadAllMemories = useCallback(async () => {
+  const visibleMemoryIds = useMemo(
+    () => visibleMemories.map((memory) => memory.memory_id),
+    [visibleMemories],
+  )
+  const allVisibleSelected = visibleMemoryIds.length > 0
+    && visibleMemoryIds.every((memoryId) => selectedMemoryIds.includes(memoryId))
+
+  const loadAllMemories = useCallback(async (page = 1, pageSize = 20, taskId?: string) => {
     setLoading(true)
     setError(null)
     try {
-      setMemories(await listMemories(config.userId))
+      const result = await listMemories({
+        userId: config.userId,
+        taskId,
+        page,
+        pageSize,
+      })
+      setMemories(result.items)
+      setListPage(result.page || page)
+      setListPageSize(result.page_size || pageSize)
+      setListTotal(result.total)
+      setIsSearchResult(false)
     } catch (loadError) {
       setError(loadError)
     } finally {
@@ -82,12 +121,12 @@ export default function MemoryPage() {
   }, [config.userId, setMemories])
 
   useEffect(() => {
-    void loadAllMemories()
-  }, [loadAllMemories])
+    void loadAllMemories(1, scope === 'all' ? 20 : 100)
+  }, [loadAllMemories, scope])
 
   const handleSearch = async () => {
     if (!keyword.trim()) {
-      await loadAllMemories()
+      await loadAllMemories(1, scope === 'all' ? 20 : 100, scope === 'task' ? scopeId.trim() || undefined : undefined)
       return
     }
     setLoading(true)
@@ -96,13 +135,15 @@ export default function MemoryPage() {
       const result = await searchMemories({
         query: keyword.trim(),
         user_id: config.userId,
-        scene_id: config.sceneId || undefined,
         memory_types: type === 'all' ? undefined : [type],
         top_k: 50,
         rerank,
         task_id: scope === 'task' && scopeId.trim() ? scopeId.trim() : undefined,
       })
       setMemories(result.results)
+      setListTotal(result.results.length)
+      setIsSearchResult(true)
+      setSelectedMemoryIds([])
     } catch (searchError) {
       setError(searchError)
     } finally {
@@ -112,17 +153,48 @@ export default function MemoryPage() {
 
   const handleEdit = (memory: MemoryItem) => {
     setEditingMemory(memory)
-    setEditContent(memory.content)
+    editForm.setFieldsValue({
+      content: memory.content,
+      summary: memory.summary,
+      status: memory.status || 'active',
+      importance: memory.importance,
+      confidence: memory.confidence,
+      tags: memory.tags?.join(', '),
+    })
   }
 
   const handleSave = async () => {
-    if (!editingMemory || !editContent.trim()) return
+    if (!editingMemory) return
+    let values: MemoryEditValues
+    try {
+      values = await editForm.validateFields()
+    } catch {
+      return
+    }
+    const tags = values.tags?.split(/[,，]/).map((tag) => tag.trim()).filter(Boolean)
     setSaving(true)
     try {
-      await updateMemory(editingMemory.memory_id, editContent.trim())
+      await updateMemory({
+        memory_id: editingMemory.memory_id,
+        content: values.content.trim(),
+        summary: values.summary?.trim() || undefined,
+        status: values.status,
+        importance: values.importance,
+        confidence: values.confidence,
+        tags,
+      })
       setMemories(memories.map((memory) =>
         memory.memory_id === editingMemory.memory_id
-          ? { ...memory, content: editContent.trim(), updated_at: new Date().toISOString() }
+          ? {
+              ...memory,
+              content: values.content.trim(),
+              summary: values.summary?.trim() || undefined,
+              status: values.status,
+              importance: values.importance,
+              confidence: values.confidence,
+              tags,
+              updated_at: new Date().toISOString(),
+            }
           : memory,
       ))
       setEditingMemory(null)
@@ -141,21 +213,49 @@ export default function MemoryPage() {
       onOk: async () => {
         await deleteMemory(memory.memory_id, '用户在前端删除')
         setMemories(memories.filter((item) => item.memory_id !== memory.memory_id))
+        setSelectedMemoryIds((ids) => ids.filter((id) => id !== memory.memory_id))
+        setListTotal((total) => Math.max(0, total - 1))
         showSuccessMessage('记忆已删除')
       },
     })
   }
 
-  const handleDeleteAll = () => {
+  const handleDeleteSelected = () => {
+    if (!selectedMemoryIds.length) return
     openConfirmDialog({
-      title: '清除当前用户的全部记忆？',
-      content: `将清除用户 ${config.userId} 的全部记忆，此操作不可撤销。`,
+      title: `删除选中的 ${selectedMemoryIds.length} 条记忆？`,
+      content: '选中的记忆将被软删除并从向量索引中移除，操作完成后不能在当前列表中继续检索。',
       onOk: async () => {
-        await deleteAllMemories(config.userId)
-        setMemories([])
-        showSuccessMessage('全部记忆已清除')
+        const results = await Promise.allSettled(selectedMemoryIds.map((memoryId) =>
+          deleteMemory(memoryId, '用户在前端批量删除'),
+        ))
+        const succeededIds = selectedMemoryIds.filter((_, index) => results[index].status === 'fulfilled')
+        const failedCount = selectedMemoryIds.length - succeededIds.length
+
+        setMemories(memories.filter((memory) => !succeededIds.includes(memory.memory_id)))
+        setSelectedMemoryIds((ids) => ids.filter((id) => !succeededIds.includes(id)))
+        setListTotal((total) => Math.max(0, total - succeededIds.length))
+
+        if (failedCount) {
+          showWarningMessage(`成功删除 ${succeededIds.length} 条，${failedCount} 条删除失败`)
+        } else {
+          showSuccessMessage(`已删除 ${succeededIds.length} 条记忆`)
+        }
       },
     })
+  }
+
+  const handleToggleDeleteMode = () => {
+    setDeleteMode((active) => !active)
+    setSelectedMemoryIds([])
+  }
+
+  const handleToggleSelectAll = () => {
+    if (allVisibleSelected) {
+      setSelectedMemoryIds((ids) => ids.filter((id) => !visibleMemoryIds.includes(id)))
+      return
+    }
+    setSelectedMemoryIds((ids) => Array.from(new Set([...ids, ...visibleMemoryIds])))
   }
 
   return (
@@ -164,8 +264,10 @@ export default function MemoryPage() {
       description={pageMeta.description}
       extra={
         <Space>
-          <Button icon={<ReloadOutlined />} onClick={() => void loadAllMemories()} loading={loading}>刷新</Button>
-          {scope === 'all' ? <Button danger onClick={handleDeleteAll} disabled={!memories.length}>清除全部</Button> : null}
+          <Button icon={<ReloadOutlined />} onClick={() => void loadAllMemories(1, scope === 'all' ? listPageSize : 100)} loading={loading}>刷新</Button>
+          <Button danger type={deleteMode ? 'primary' : 'default'} icon={<DeleteOutlined />} onClick={handleToggleDeleteMode}>
+            清除记忆
+          </Button>
         </Space>
       }
     >
@@ -216,6 +318,9 @@ export default function MemoryPage() {
             value={scopeId}
             placeholder={scope === 'session' ? '输入 Session ID 筛选会话记忆' : '输入 Task ID 筛选任务记忆'}
             onChange={(event) => setScopeId(event.target.value)}
+            onSearch={(value) => {
+              if (scope === 'task') void loadAllMemories(1, 100, value.trim() || undefined)
+            }}
           />
         </Card>
       ) : null}
@@ -234,13 +339,28 @@ export default function MemoryPage() {
       {loading ? <FeedbackState status="loading" description="正在加载记忆库…" /> : null}
       {!loading && error ? <FeedbackState status="error" title="记忆加载失败" error={error} action={<Button onClick={() => void loadAllMemories()}>重新加载</Button>} /> : null}
       {!loading && !error ? (
-        <Card className="console-card" title={`${pageMeta.tableTitle}（${visibleMemories.length}）`} variant="borderless">
+        <Card className="console-card" title={`${pageMeta.tableTitle}（${scope === 'all' && !isSearchResult ? listTotal : visibleMemories.length}）`} variant="borderless">
           <Table<MemoryItem>
             rowKey="memory_id"
             dataSource={visibleMemories}
+            rowSelection={deleteMode ? {
+              selectedRowKeys: selectedMemoryIds,
+              preserveSelectedRowKeys: true,
+              hideSelectAll: true,
+              onChange: (selectedRowKeys) => setSelectedMemoryIds(selectedRowKeys.map(String)),
+            } : undefined}
             locale={{ emptyText: '暂无记忆，请先从“记忆数据导入”页面写入数据。' }}
             scroll={{ x: 900 }}
-            pagination={{ pageSize: 10, showSizeChanger: true }}
+            pagination={isSearchResult || scope !== 'all'
+              ? { pageSize: 10, showSizeChanger: true }
+              : {
+                  current: listPage,
+                  pageSize: listPageSize,
+                  total: listTotal,
+                  showSizeChanger: true,
+                  showTotal: (total) => `共 ${total} 条`,
+                  onChange: (page, pageSize) => void loadAllMemories(page, pageSize),
+                }}
             columns={[
               { title: '记忆内容', dataIndex: 'content', ellipsis: true, width: 330 },
               { title: '类型', dataIndex: 'memory_type', width: 105, render: (value?: string) => <Tag color="blue">{value || 'unknown'}</Tag> },
@@ -259,11 +379,55 @@ export default function MemoryPage() {
               ) },
             ]}
           />
+          {deleteMode ? (
+            <Flex className="memory-delete-toolbar" justify="space-between" align="center" wrap gap={12}>
+              <Typography.Text type="secondary">已选择 {selectedMemoryIds.length} 条记忆</Typography.Text>
+              <Space>
+                <Button onClick={handleToggleSelectAll} disabled={!visibleMemoryIds.length}>
+                  {allVisibleSelected ? '取消全选' : '全部选中'}
+                </Button>
+                <Button type="primary" danger icon={<DeleteOutlined />} onClick={handleDeleteSelected} disabled={!selectedMemoryIds.length}>
+                  清除所选记忆
+                </Button>
+              </Space>
+            </Flex>
+          ) : null}
         </Card>
       ) : null}
 
-      <Modal title="编辑记忆" open={!!editingMemory} okText="保存" cancelText="取消" confirmLoading={saving} onOk={() => void handleSave()} onCancel={() => setEditingMemory(null)}>
-        <Input.TextArea rows={6} value={editContent} onChange={(event) => setEditContent(event.target.value)} />
+      <Modal title="编辑记忆" open={!!editingMemory} okText="保存" cancelText="取消" confirmLoading={saving} onOk={() => void handleSave()} onCancel={() => setEditingMemory(null)} width={680}>
+        <Form<MemoryEditValues> form={editForm} layout="vertical">
+          <Form.Item name="content" label="记忆内容" rules={[{ required: true, whitespace: true, message: '请输入记忆内容' }]}>
+            <Input.TextArea rows={5} />
+          </Form.Item>
+          <Form.Item name="summary" label="摘要">
+            <Input.TextArea rows={2} placeholder="可选的记忆摘要" />
+          </Form.Item>
+          <Row gutter={12}>
+            <Col span={8}>
+              <Form.Item name="status" label="状态">
+                <Select options={[
+                  { value: 'active', label: '有效' },
+                  { value: 'archived', label: '已归档' },
+                  { value: 'deleted', label: '已删除' },
+                ]} />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item name="importance" label="重要性">
+                <InputNumber min={0} max={1} step={0.1} style={{ width: '100%' }} />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item name="confidence" label="置信度">
+                <InputNumber min={0} max={1} step={0.1} style={{ width: '100%' }} />
+              </Form.Item>
+            </Col>
+          </Row>
+          <Form.Item name="tags" label="标签">
+            <Input placeholder="多个标签使用逗号分隔" />
+          </Form.Item>
+        </Form>
       </Modal>
     </PageContainer>
   )

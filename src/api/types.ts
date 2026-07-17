@@ -51,8 +51,16 @@ export interface MemoryContextPayload {
   user_id: string
   scene_id?: string
   task_id?: string
+  session_id?: string
   max_tokens?: number
   group_by_type?: boolean
+  top_k?: number
+  max_content_length?: number
+  memory_types?: string[]
+  status?: string[]
+  include_preferences?: boolean
+  include_facts?: boolean
+  include_task_state?: boolean
 }
 
 export interface MemoryContextResult {
@@ -86,6 +94,64 @@ export interface MemoryWriteItem {
 
 export interface MemoryWriteResult {
   results: MemoryWriteItem[]
+}
+
+export type MemoryExtractionType =
+  | 'key_fact'
+  | 'task_state'
+  | 'decision'
+  | 'preference'
+  | 'process'
+  | 'feedback'
+
+export interface MemoryGenerationPayload {
+  text: string
+  user_id: string
+  agent_id?: string
+  scene_id?: string
+  session_id?: string
+  task_id?: string
+  extraction_types?: MemoryExtractionType[]
+  source_record_ids?: string[]
+  metadata?: Record<string, unknown>
+}
+
+export interface MemoryBatchGenerationPayload {
+  texts: string[]
+  user_id: string
+  agent_id?: string
+  scene_id?: string
+  session_id?: string
+  task_id?: string
+  extraction_types?: MemoryExtractionType[]
+}
+
+export interface MemoryGenerationDetail {
+  action: string
+  memory_id?: string
+  content_preview?: string
+  memory_type?: string
+  importance?: number
+  confidence?: number
+  message?: string
+}
+
+export interface MemoryGenerationResult {
+  memory_ids: string[]
+  new_count: number
+  merged_count: number
+  discarded_count: number
+  updated_count: number
+  conflict_count: number
+  details: MemoryGenerationDetail[]
+}
+
+export interface MemoryBatchGenerationResult {
+  results: MemoryGenerationResult[]
+  total_memories: number
+  total_new: number
+  total_merged: number
+  total_discarded: number
 }
 
 export interface MemorySearchPayload {
@@ -137,6 +203,24 @@ export interface MemoryListResult {
   total: number
   page: number
   page_size: number
+}
+
+export interface MemoryListParams {
+  userId: string
+  sceneId?: string
+  taskId?: string
+  page?: number
+  pageSize?: number
+}
+
+export interface MemoryUpdatePayload {
+  memory_id: string
+  content?: string
+  summary?: string
+  status?: string
+  importance?: number
+  confidence?: number
+  tags?: string[]
 }
 
 export interface TaskCreatePayload {

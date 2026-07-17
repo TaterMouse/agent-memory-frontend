@@ -102,16 +102,18 @@ export default function IngestionPage() {
     if (!records.length) return
     setImporting(true)
     let successCount = 0
+    let generatedCount = 0
     try {
       for (const record of records) {
-        await writeMemories(buildWritePayload(mode, record, config.userId, config.sceneId))
+        const result = await writeMemories(buildWritePayload(mode, record, config.userId, config.sceneId))
         successCount += 1
+        generatedCount += result.results.length
       }
-      showSuccessMessage(`成功写入 ${successCount} 条记忆数据`)
+      showSuccessMessage(`成功处理 ${successCount} 条导入记录，生成 ${generatedCount} 条记忆`)
       setRecords([])
       setFileList([])
     } catch (error) {
-      showErrorMessage(error, `已写入 ${successCount} 条，后续数据处理失败`)
+      showErrorMessage(error, `已处理 ${successCount} 条导入记录并生成 ${generatedCount} 条记忆，后续数据处理失败`)
     } finally {
       setImporting(false)
     }

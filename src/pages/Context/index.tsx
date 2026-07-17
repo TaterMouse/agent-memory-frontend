@@ -1,5 +1,5 @@
 import { CodeOutlined, FileTextOutlined, SendOutlined } from '@ant-design/icons'
-import { Button, Card, Col, Form, Input, InputNumber, Row, Segmented, Space, Tag, Typography } from 'antd'
+import { Button, Card, Col, Form, Input, InputNumber, Row, Segmented, Select, Space, Tag, Typography } from 'antd'
 import { useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import type { MemoryContextResult } from '@/api/types'
@@ -12,6 +12,11 @@ interface ContextFormValues {
   query: string
   maxTokens: number
   groupByType: boolean
+  topK: number
+  maxContentLength: number
+  memoryTypes?: string[]
+  status?: string[]
+  taskId?: string
 }
 
 type ContextMode = 'all' | 'json' | 'text' | 'relevance' | 'length'
@@ -85,8 +90,13 @@ export default function ContextPage() {
         query: values.query.trim(),
         user_id: config.userId,
         scene_id: config.sceneId || undefined,
+        task_id: values.taskId?.trim() || undefined,
         max_tokens: values.maxTokens,
         group_by_type: values.groupByType,
+        top_k: values.topK,
+        max_content_length: values.maxContentLength,
+        memory_types: values.memoryTypes?.length ? values.memoryTypes : undefined,
+        status: values.status?.length ? values.status : undefined,
       }))
     } catch (error) {
       setResult(null)
@@ -108,7 +118,13 @@ export default function ContextPage() {
             <Form<ContextFormValues>
               key={mode}
               layout="vertical"
-              initialValues={{ maxTokens: mode === 'length' ? 1200 : 3000, groupByType: true }}
+              initialValues={{
+                maxTokens: mode === 'length' ? 1200 : 3000,
+                groupByType: true,
+                topK: 20,
+                maxContentLength: mode === 'length' ? 120 : 200,
+                status: ['active'],
+              }}
               onFinish={(values) => void handleGenerate(values)}
             >
               <Form.Item name="query" label="当前任务或查询" rules={[{ required: true, whitespace: true, message: '请输入查询内容' }]}>
@@ -125,6 +141,53 @@ export default function ContextPage() {
                     <Segmented block options={[{ label: '分组', value: true }, { label: '平铺', value: false }]} />
                   </Form.Item>
                 </Col> : null}
+              </Row>
+              <Row gutter={12}>
+                <Col span={12}>
+                  <Form.Item name="topK" label="候选记忆数量">
+                    <InputNumber min={1} max={50} style={{ width: '100%' }} />
+                  </Form.Item>
+                </Col>
+                <Col span={12}>
+                  <Form.Item name="maxContentLength" label="单条最大字符数">
+                    <InputNumber min={1} max={5000} style={{ width: '100%' }} />
+                  </Form.Item>
+                </Col>
+              </Row>
+              <Form.Item name="memoryTypes" label="记忆类型（可选）">
+                <Select
+                  mode="multiple"
+                  allowClear
+                  placeholder="默认包含全部类型"
+                  options={[
+                    { value: 'preference', label: '用户偏好' },
+                    { value: 'fact', label: '关键事实' },
+                    { value: 'task_state', label: '任务状态' },
+                    { value: 'decision', label: '历史决策' },
+                    { value: 'constraint', label: '约束条件' },
+                    { value: 'process', label: '过程经验' },
+                  ]}
+                />
+              </Form.Item>
+              <Row gutter={12}>
+                <Col span={12}>
+                  <Form.Item name="status" label="记忆状态">
+                    <Select
+                      mode="multiple"
+                      allowClear
+                      options={[
+                        { value: 'active', label: '有效' },
+                        { value: 'archived', label: '已归档' },
+                        { value: 'deleted', label: '已删除' },
+                      ]}
+                    />
+                  </Form.Item>
+                </Col>
+                <Col span={12}>
+                  <Form.Item name="taskId" label="Task ID（可选）">
+                    <Input placeholder="task_xxx" />
+                  </Form.Item>
+                </Col>
               </Row>
               <Button type="primary" htmlType="submit" icon={<SendOutlined />} loading={loading} block>
                 生成上下文
