@@ -1,7 +1,6 @@
 import {
   ApiOutlined,
   ApartmentOutlined,
-  AppstoreOutlined,
   BranchesOutlined,
   CheckCircleOutlined,
   CloudUploadOutlined,
@@ -16,7 +15,6 @@ import {
   HistoryOutlined,
   KeyOutlined,
   MessageOutlined,
-  ProfileOutlined,
   RobotOutlined,
   SafetyCertificateOutlined,
   SearchOutlined,
@@ -393,10 +391,6 @@ export const menuSectionConfigs: MenuSectionConfig[] = [
     label: '2. 通用记忆建模与多层记忆管理',
     icon: <DatabaseOutlined />,
     items: [
-      capabilityItem('memory-unit-model', <AppstoreOutlined />),
-      capabilityItem('memory-type-management', <TagsOutlined />),
-      capabilityItem('memory-status-management', <CheckCircleOutlined />),
-      capabilityItem('metadata-management', <ProfileOutlined />),
       routeItem('memory:user', appRoutes.userMemory, '用户级记忆', <UserOutlined />),
       routeItem('memory:session', appRoutes.sessionMemory, '会话级记忆', <MessageOutlined />),
       routeItem('memory:task', appRoutes.taskMemory, '任务级记忆', <UnorderedListOutlined />),
