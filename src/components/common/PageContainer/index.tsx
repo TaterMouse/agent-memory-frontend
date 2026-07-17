@@ -4,6 +4,7 @@ import { PageSection } from '@/components/common/PageSection'
 
 interface PageContainerProps {
   title: string
+  titleExtra?: ReactNode
   description?: string
   extra?: ReactNode
   children: ReactNode
@@ -11,6 +12,7 @@ interface PageContainerProps {
 
 export function PageContainer({
   title,
+  titleExtra,
   description,
   extra,
   children,
@@ -29,7 +31,12 @@ export function PageContainer({
         >
           <div style={{ flex: 1, minWidth: 0 }}>
             <Typography.Title level={3} style={{ margin: 0 }}>
-              {title}
+              <span>{title}</span>
+              {titleExtra ? (
+                <span style={{ display: 'inline-flex', marginInlineStart: 8, verticalAlign: 'middle' }}>
+                  {titleExtra}
+                </span>
+              ) : null}
             </Typography.Title>
             {description ? (
               <Typography.Paragraph type="secondary" style={{ margin: '8px 0 0' }}>

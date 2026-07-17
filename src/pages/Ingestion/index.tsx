@@ -2,10 +2,11 @@ import {
   CheckCircleOutlined,
   ClockCircleOutlined,
   CloudUploadOutlined,
+  ExclamationCircleOutlined,
   FileTextOutlined,
   RobotOutlined,
 } from '@ant-design/icons'
-import { Alert, App, Button, Card, Col, Flex, Row, Segmented, Space, Table, Tag, Typography, Upload } from 'antd'
+import { App, Button, Card, Col, Flex, Row, Segmented, Space, Table, Tag, Tooltip, Typography, Upload } from 'antd'
 import type { UploadFile } from 'antd'
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
@@ -157,16 +158,39 @@ export default function IngestionPage() {
   return (
     <PageContainer
       title="智能体接入与记忆数据写入"
+      titleExtra={(
+        <Tooltip
+          placement="right"
+          trigger={['hover', 'focus']}
+          title={(
+            <span>
+              <strong>当前用户的本地真实统计</strong>
+              <br />
+              以下指标和最近导入批次由当前浏览器根据实际解析与写入结果计算，不代表后台全局统计。
+            </span>
+          )}
+        >
+          <button
+            type="button"
+            aria-label="查看本地统计口径说明"
+            style={{
+              alignItems: 'center',
+              background: 'transparent',
+              border: 0,
+              color: '#8c8c8c',
+              cursor: 'help',
+              display: 'inline-flex',
+              fontSize: 16,
+              padding: 0,
+            }}
+          >
+            <ExclamationCircleOutlined />
+          </button>
+        </Tooltip>
+      )}
       description="统一接收智能体对话、历史会话与任务过程数据，完成校验后写入记忆生成流水线。"
       extra={<Tag color="blue">当前用户：{config.userId}</Tag>}
     >
-      <Alert
-        showIcon
-        type="info"
-        title="当前用户的本地真实统计"
-        description="以下指标和最近导入批次由当前浏览器根据实际解析与写入结果计算，不代表后台全局统计。"
-      />
-
       <Row gutter={[14, 14]}>
         {[
           {
