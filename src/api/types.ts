@@ -154,6 +154,28 @@ export interface MemoryBatchGenerationResult {
   total_discarded: number
 }
 
+export interface MemoryAsyncGenerationSubmitResult {
+  request_id: string
+  status: 'accepted'
+  message?: string
+}
+
+export type MemoryAsyncGenerationStatus =
+  | 'pending'
+  | 'processing'
+  | 'completed'
+  | 'failed'
+  | 'not_found'
+
+export interface MemoryAsyncGenerationStatusResult {
+  request_id: string
+  status: MemoryAsyncGenerationStatus
+  progress?: number
+  result?: MemoryGenerationResult | null
+  error?: string | null
+  message?: string
+}
+
 export interface MemorySearchPayload {
   query: string
   user_id: string

@@ -1,7 +1,6 @@
 import {
   ApiOutlined,
   ApartmentOutlined,
-  AppstoreOutlined,
   BranchesOutlined,
   CheckCircleOutlined,
   CloudUploadOutlined,
@@ -16,7 +15,6 @@ import {
   HistoryOutlined,
   KeyOutlined,
   MessageOutlined,
-  ProfileOutlined,
   RobotOutlined,
   SafetyCertificateOutlined,
   SearchOutlined,
@@ -28,7 +26,8 @@ import {
   WarningOutlined,
 } from '@ant-design/icons'
 import type { ReactNode } from 'react'
-import { findCapability, findCapabilityByPath, getCapabilityPath } from '@/constants/capabilities'
+import { generationPresets, getGenerationPath } from '@/constants/generation'
+import type { GenerationView } from '@/constants/generation'
 import { appRoutes } from '@/constants/routes'
 import {
   AgentAccessRoutePage,
@@ -369,10 +368,9 @@ function routeItem(key: string, path: string, label: string, icon: ReactNode): M
   return { key, path, label, icon }
 }
 
-function capabilityItem(id: string, icon: ReactNode): MenuEntryConfig {
-  const capability = findCapability(id)
-  if (!capability) throw new Error(`Unknown capability: ${id}`)
-  return routeItem(`capability:${id}`, getCapabilityPath(id), capability.title, icon)
+function generationItem(view: GenerationView, icon: ReactNode): MenuEntryConfig {
+  const preset = generationPresets[view]
+  return routeItem(`generation:${view}`, getGenerationPath(view), preset.title, icon)
 }
 
 export const menuSectionConfigs: MenuSectionConfig[] = [
@@ -384,9 +382,7 @@ export const menuSectionConfigs: MenuSectionConfig[] = [
       routeItem('access:agent', appRoutes.agentAccess, '智能体注册接入', <RobotOutlined />),
       routeItem('access:scene', appRoutes.sceneManagement, '场景标识配置', <TagsOutlined />),
       routeItem('access:key', appRoutes.credentialManagement, '接口密钥配置', <KeyOutlined />),
-      routeItem('access:dialogue', `${appRoutes.ingestion}?mode=dialogue`, '对话记录写入', <MessageOutlined />),
-      routeItem('access:session', `${appRoutes.ingestion}?mode=session`, '历史会话导入', <HistoryOutlined />),
-      routeItem('access:task', `${appRoutes.ingestion}?mode=task_process`, '任务过程写入', <UnorderedListOutlined />),
+      routeItem('access:ingestion', appRoutes.ingestion, '记忆数据导入', <CloudUploadOutlined />),
       routeItem('access:validation', appRoutes.dataValidation, '数据校验与标准化', <CheckCircleOutlined />),
     ],
   },
@@ -395,14 +391,10 @@ export const menuSectionConfigs: MenuSectionConfig[] = [
     label: '2. 通用记忆建模与多层记忆管理',
     icon: <DatabaseOutlined />,
     items: [
-      capabilityItem('memory-unit-model', <AppstoreOutlined />),
-      capabilityItem('memory-type-management', <TagsOutlined />),
-      capabilityItem('memory-status-management', <CheckCircleOutlined />),
-      capabilityItem('metadata-management', <ProfileOutlined />),
       routeItem('memory:user', appRoutes.userMemory, '用户级记忆', <UserOutlined />),
       routeItem('memory:session', appRoutes.sessionMemory, '会话级记忆', <MessageOutlined />),
       routeItem('memory:task', appRoutes.taskMemory, '任务级记忆', <UnorderedListOutlined />),
-      capabilityItem('agent-level-memory', <RobotOutlined />),
+      routeItem('memory:agent', appRoutes.memory, '智能体级记忆', <RobotOutlined />),
     ],
   },
   {
@@ -410,15 +402,15 @@ export const menuSectionConfigs: MenuSectionConfig[] = [
     label: '3. 记忆生成与去重融合',
     icon: <ApartmentOutlined />,
     items: [
-      capabilityItem('preference-extraction', <UserOutlined />),
-      capabilityItem('fact-extraction', <FileSearchOutlined />),
-      capabilityItem('task-state-generation', <CheckCircleOutlined />),
-      capabilityItem('decision-settlement', <HistoryOutlined />),
-      capabilityItem('conflict-detection', <WarningOutlined />),
-      capabilityItem('conflict-memory-dedup', <DeleteOutlined />),
-      capabilityItem('similar-memory-dedup', <BranchesOutlined />),
-      capabilityItem('memory-fusion-management', <ApartmentOutlined />),
-      capabilityItem('low-value-filter', <FilterOutlined />),
+      generationItem('preference', <UserOutlined />),
+      generationItem('fact', <FileSearchOutlined />),
+      generationItem('task-state', <CheckCircleOutlined />),
+      generationItem('decision', <HistoryOutlined />),
+      generationItem('conflict', <WarningOutlined />),
+      generationItem('conflict-dedup', <DeleteOutlined />),
+      generationItem('similar-dedup', <BranchesOutlined />),
+      generationItem('fusion', <ApartmentOutlined />),
+      generationItem('low-value', <FilterOutlined />),
     ],
   },
   {
@@ -466,5 +458,5 @@ export const menuSectionConfigs: MenuSectionConfig[] = [
 ]
 
 export function findRouteConfig(pathname: string) {
-  return appRouteConfigs.find((route) => route.path === pathname) ?? findCapabilityByPath(pathname)
+  return appRouteConfigs.find((route) => route.path === pathname)
 }
