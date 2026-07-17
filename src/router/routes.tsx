@@ -4,8 +4,8 @@ import { AppErrorFallback } from '@/components/common'
 import { appRoutes } from '@/constants/routes'
 import { AppLayout } from '@/layouts/AppLayout'
 import { RouteErrorBoundary } from '@/router/RouteErrorBoundary'
+import { LegacyCapabilityRedirect } from '@/router/LegacyCapabilityRedirect'
 import { appRouteConfigs } from '@/router/route-config'
-import { CapabilityGuideRoutePage } from '@/router/LazyRoutePages'
 
 const childRoutes = appRouteConfigs.map((route) => {
   if (route.path === appRoutes.overview) {
@@ -30,7 +30,7 @@ export const appRouter = createBrowserRouter([
       ...childRoutes,
       {
         path: 'capabilities/:capabilityId',
-        element: <CapabilityGuideRoutePage />,
+        element: <LegacyCapabilityRedirect />,
       },
       {
         path: 'home',

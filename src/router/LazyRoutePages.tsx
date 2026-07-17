@@ -15,7 +15,6 @@ const ContextPage = lazy(() => import('@/pages/Context'))
 const SettingsPage = lazy(() => import('@/pages/Settings'))
 const TaskPage = lazy(() => import('@/pages/Task'))
 const MonitoringPage = lazy(() => import('@/pages/Monitoring'))
-const CapabilityGuidePage = lazy(() => import('@/pages/CapabilityGuide'))
 
 function LazyPage({ page: Page }: { page: LazyExoticComponent<ComponentType> }) {
   return (
@@ -75,8 +74,4 @@ export function TaskRoutePage() {
 
 export function MonitoringRoutePage() {
   return <LazyPage page={MonitoringPage} />
-}
-
-export function CapabilityGuideRoutePage() {
-  return <LazyPage page={CapabilityGuidePage} />
 }

@@ -7,6 +7,8 @@ import type {
   MemoryBatchGenerationResult,
   MemoryGenerationPayload,
   MemoryGenerationResult,
+  MemoryAsyncGenerationStatusResult,
+  MemoryAsyncGenerationSubmitResult,
   MemoryItem,
   MemoryListParams,
   MemoryListResult,
@@ -54,6 +56,23 @@ export function generateMemoriesBatch(payload: MemoryBatchGenerationPayload) {
     url: '/api/v1/memory/generate/batch',
     method: 'POST',
     data: payload,
+  })
+}
+
+export function generateMemoriesAsync(payload: MemoryGenerationPayload) {
+  return request<MemoryAsyncGenerationSubmitResult>({
+    url: '/api/v1/memory/generate/async',
+    method: 'POST',
+    data: payload,
+    timeout: 30000,
+  })
+}
+
+export function getMemoryGenerationStatus(requestId: string) {
+  return request<MemoryAsyncGenerationStatusResult>({
+    url: `/api/v1/memory/generate/${encodeURIComponent(requestId)}/status`,
+    method: 'GET',
+    timeout: 30000,
   })
 }
 

@@ -1,6 +1,23 @@
 import { App as AntdApp, ConfigProvider } from 'antd'
+import { useEffect } from 'react'
 import { AppErrorBoundary } from '@/components/common'
 import { AppRouterProvider } from '@/router'
+import { setContextMessage } from '@/utils/feedback'
+
+function AppContent() {
+  const { message } = AntdApp.useApp()
+
+  useEffect(() => {
+    setContextMessage(message)
+    return () => setContextMessage(undefined)
+  }, [message])
+
+  return (
+    <AppErrorBoundary>
+      <AppRouterProvider />
+    </AppErrorBoundary>
+  )
+}
 
 function App() {
   return (
@@ -22,9 +39,7 @@ function App() {
       }}
     >
       <AntdApp>
-        <AppErrorBoundary>
-          <AppRouterProvider />
-        </AppErrorBoundary>
+        <AppContent />
       </AntdApp>
     </ConfigProvider>
   )

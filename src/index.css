@@ -625,12 +625,12 @@ code {
 
 .generation-grid {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 12px;
 }
 
 .generation-stage {
-  min-height: 218px;
+  min-height: 224px;
 }
 
 .generation-number {
@@ -653,6 +653,28 @@ code {
   font-size: 12px;
 }
 
+.generation-stage-status {
+  padding-top: 9px;
+  border-top: 3px solid #e8edf3;
+  color: #8c96a6;
+  font-size: 12px;
+}
+
+.generation-stage.running .generation-stage-status {
+  border-top-color: #1677ff;
+  color: #1677ff;
+}
+
+.generation-stage.completed .generation-stage-status {
+  border-top-color: #20a47c;
+  color: #208461;
+}
+
+.generation-stage.failed .generation-stage-status {
+  border-top-color: #ff7875;
+  color: #cf3b37;
+}
+
 .generation-health {
   padding: 10px 12px;
   border-radius: 7px;
@@ -672,7 +694,20 @@ code {
 }
 
 .generation-request-context {
-  margin: -2px 0 16px;
+  margin: 14px 0 16px;
+}
+
+.generation-advanced {
+  margin-bottom: 2px;
+  background: #fbfcfe;
+}
+
+.generation-advanced .ant-form-item:last-child {
+  margin-bottom: 8px;
+}
+
+.generation-async-status {
+  margin-bottom: 14px;
 }
 
 .generation-empty {
@@ -759,10 +794,6 @@ code {
 }
 
 @media (max-width: 1199px) {
-  .generation-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
   .generation-result-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
