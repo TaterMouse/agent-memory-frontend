@@ -265,6 +265,104 @@ export interface TaskProgressUpdatePayload {
   pending_items?: string[]
 }
 
+export interface AdminStatsResult {
+  total_memories: number
+  total_users: number
+  total_agents: number
+  total_sessions: number
+}
+
+export interface DashboardSummary {
+  agent_count?: number | null
+  scene_count?: number | null
+  memory_count?: number | null
+  retrieval_count?: number | null
+  context_success_rate?: number | null
+}
+
+export interface DashboardComparison {
+  agent_count_rate?: number | null
+  scene_count_rate?: number | null
+  memory_count_rate?: number | null
+  retrieval_count_rate?: number | null
+  context_success_rate_change?: number | null
+}
+
+export interface DashboardGenerationSummary {
+  generated_count?: number | null
+  merged_count?: number | null
+  updated_count?: number | null
+  discarded_count?: number | null
+  conflict_count?: number | null
+}
+
+export interface DashboardMemoryTrendItem {
+  date: string
+  total: number
+  added?: number | null
+}
+
+export interface DashboardMemoryTypeItem {
+  memory_type: string
+  count: number
+  ratio: number
+}
+
+export interface DashboardRetrievalSignalItem {
+  signal: string
+  count: number
+  ratio: number
+}
+
+export interface DashboardRecentAgent {
+  agent_id?: string
+  scene_id?: string
+  scene_name?: string
+  status?: string
+  last_write_at?: string
+  latest_result?: string
+}
+
+export interface DashboardRecentRetrieval {
+  retrieval_id?: string
+  memory_type?: string
+  content?: string
+  summary?: string
+  relevance_score?: number | null
+  created_at?: string
+  occurred_at?: string
+}
+
+export interface DashboardRecentAlert {
+  message?: string
+  error_code?: string
+  trace_id?: string
+  occurred_at?: string
+}
+
+export interface DashboardRecentTask {
+  task_id?: string
+  title?: string
+  status?: string
+  created_at?: string
+  updated_at?: string
+}
+
+export interface DashboardResult {
+  summary?: DashboardSummary
+  comparison?: DashboardComparison
+  generation_summary?: DashboardGenerationSummary
+  memory_trend?: DashboardMemoryTrendItem[]
+  memory_type_distribution?: DashboardMemoryTypeItem[]
+  retrieval_signal_distribution?: DashboardRetrievalSignalItem[]
+  recent_agents?: DashboardRecentAgent[]
+  recent_retrievals?: DashboardRecentRetrieval[]
+  recent_alerts?: DashboardRecentAlert[]
+  recent_tasks?: DashboardRecentTask[]
+  latest_context?: Record<string, unknown> | null
+  generated_at?: string
+}
+
 export function unwrapApiResponse<T>(payload: unknown) {
   if (typeof payload !== 'object' || payload === null || !('code' in payload)) {
     throw new ApiError('接口响应格式不正确', { errorCode: 'INVALID_RESPONSE' })

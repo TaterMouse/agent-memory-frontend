@@ -1,4 +1,5 @@
 export * from './agent'
+export * from './dashboard'
 export * from './memory'
 export * from './scene'
 export * from './task'
