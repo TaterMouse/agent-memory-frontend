@@ -5,24 +5,22 @@ import {
   FileTextOutlined,
   RobotOutlined,
 } from '@ant-design/icons'
-import { Button, Card, Col, Flex, Row, Segmented, Space, Table, Tag, Typography, Upload } from 'antd'
+import { App, Button, Card, Col, Flex, Row, Segmented, Space, Table, Tag, Typography, Upload } from 'antd'
 import type { UploadFile } from 'antd'
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import type { MemoryImportRecord, MemoryWritePayload } from '@/api/types'
+import type { MemoryImportRecord } from '@/api/types'
 import { writeMemories } from '@/api/modules/memory'
 import { PageContainer } from '@/components/common'
+import {
+  buildWritePayload,
+  modeMeta,
+  resolveImportMode,
+} from '@/pages/Ingestion/model'
+import type { ImportMode } from '@/pages/Ingestion/model'
 import { useAppStore } from '@/store'
 import { showErrorMessage, showSuccessMessage } from '@/utils/feedback'
 import { parseMemoryImportText } from '@/utils/memoryImport'
-
-type ImportMode = 'dialogue' | 'session' | 'task_process'
-
-const modeMeta: Record<ImportMode, { label: string; title: string; description: string }> = {
-  dialogue: { label: '对话记录', title: '导入对话记忆', description: '将用户与智能体的历史消息写入记忆生成流水线。' },
-  session: { label: '历史会话', title: '导入历史会话', description: '按时间、来源和摘要导入已经结束的会话记录。' },
-  task_process: { label: '任务过程', title: '导入任务过程', description: '导入任务目标、进展、待办事项和执行结果。' },
-}
 
 const recentImports = [
   { key: '1', source: '物流调度智能体', type: '历史会话', count: 128, status: '已完成', time: '今天 10:32' },
@@ -30,59 +28,46 @@ const recentImports = [
   { key: '3', source: '订单处理智能体', type: '任务过程', count: 42, status: '已完成', time: '昨天 18:20' },
 ]
 
-function buildWritePayload(
-  mode: ImportMode,
-  record: MemoryImportRecord,
-  userId: string,
-  defaultSceneId: string,
-): MemoryWritePayload {
-  const base = {
-    user_id: userId,
-    scene_id: record.scene_id || defaultSceneId || undefined,
-    task_id: record.task_id,
-    interaction_type: mode,
-  } satisfies MemoryWritePayload
-
-  if (mode === 'session') {
-    return {
-      ...base,
-      session_time: record.session_time,
-      session_source: record.session_source || 'frontend_file_import',
-      session_summary: record.session_summary || record.content,
-    }
-  }
-
-  if (mode === 'task_process') {
-    return {
-      ...base,
-      task_goal: record.task_goal,
-      task_progress: record.task_progress || record.content,
-      task_result: record.task_result,
-    }
-  }
-
-  return {
-    ...base,
-    messages: [{ role: record.role || 'user', content: record.content }],
-  }
-}
-
 export default function IngestionPage() {
-  const [searchParams] = useSearchParams()
+  const { modal } = App.useApp()
+  const [searchParams, setSearchParams] = useSearchParams()
   const config = useAppStore((state) => state.config)
-  const [mode, setMode] = useState<ImportMode>('dialogue')
+  const mode = resolveImportMode(searchParams.get('mode'))
   const [fileList, setFileList] = useState<UploadFile[]>([])
   const [records, setRecords] = useState<MemoryImportRecord[]>([])
   const [importing, setImporting] = useState(false)
 
   useEffect(() => {
-    const requestedMode = searchParams.get('mode')
-    if (requestedMode && requestedMode in modeMeta) {
-      setMode(requestedMode as ImportMode)
-      setRecords([])
-      setFileList([])
+    setRecords([])
+    setFileList([])
+  }, [mode])
+
+  const applyModeChange = (nextMode: ImportMode) => {
+    setRecords([])
+    setFileList([])
+
+    const nextParams = new URLSearchParams(searchParams)
+    nextParams.set('mode', nextMode)
+    setSearchParams(nextParams, { replace: true })
+  }
+
+  const handleModeChange = (value: string | number) => {
+    const nextMode = resolveImportMode(String(value))
+    if (nextMode === mode) return
+
+    if (records.length || fileList.length) {
+      modal.confirm({
+        title: '确认切换导入模式？',
+        content: '切换模式将清空当前已选择并解析的文件。',
+        okText: '切换模式',
+        cancelText: '继续当前导入',
+        onOk: () => applyModeChange(nextMode),
+      })
+      return
     }
-  }, [searchParams])
+
+    applyModeChange(nextMode)
+  }
 
   const handleFile = async (file: File) => {
     try {
@@ -150,12 +135,9 @@ export default function IngestionPage() {
               <Segmented
                 block
                 value={mode}
+                disabled={importing}
                 options={(Object.keys(modeMeta) as ImportMode[]).map((key) => ({ label: modeMeta[key].label, value: key }))}
-                onChange={(value) => {
-                  setMode(value as ImportMode)
-                  setRecords([])
-                  setFileList([])
-                }}
+                onChange={handleModeChange}
               />
               <div>
                 <Typography.Title level={5} style={{ margin: 0 }}>{modeMeta[mode].title}</Typography.Title>
@@ -187,11 +169,13 @@ export default function IngestionPage() {
         <Col xs={24} xl={9}>
           <Card className="console-card" title="数据格式说明" variant="borderless">
             <Space orientation="vertical" size={14}>
-              <div><Tag color="blue">对话记录</Tag><Typography.Text>content、role、scene_id、task_id</Typography.Text></div>
-              <div><Tag color="green">历史会话</Tag><Typography.Text>session_summary、session_time、session_source</Typography.Text></div>
-              <div><Tag color="gold">任务过程</Tag><Typography.Text>task_goal、task_progress、task_result</Typography.Text></div>
+              <div>
+                <Tag color={modeMeta[mode].color}>{modeMeta[mode].label}</Tag>
+                <Typography.Text>{modeMeta[mode].fields.join('、')}</Typography.Text>
+              </div>
               <Typography.Paragraph type="secondary">
-                为兼容简单文件，三种模式均可仅提供 content；系统会根据当前模式映射为消息、会话摘要或任务进展。
+                当前模式支持仅提供 content；系统会将其映射为
+                {mode === 'dialogue' ? '对话消息' : mode === 'session' ? '会话摘要' : '任务进展'}。
               </Typography.Paragraph>
             </Space>
           </Card>
