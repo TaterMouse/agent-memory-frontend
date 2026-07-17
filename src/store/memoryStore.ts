@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { MemoryItem } from '../api/types'
+import type { MemoryItem } from '@/api/types'
 
 interface MemoryStoreState {
   memories: MemoryItem[]
