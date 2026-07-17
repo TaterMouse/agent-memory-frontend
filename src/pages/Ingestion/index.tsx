@@ -5,7 +5,7 @@ import {
   FileTextOutlined,
   RobotOutlined,
 } from '@ant-design/icons'
-import { App, Button, Card, Col, Flex, Row, Segmented, Space, Table, Tag, Typography, Upload } from 'antd'
+import { Alert, App, Button, Card, Col, Flex, Row, Segmented, Space, Table, Tag, Typography, Upload } from 'antd'
 import type { UploadFile } from 'antd'
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
@@ -19,23 +19,49 @@ import {
 } from '@/pages/Ingestion/model'
 import type { ImportMode } from '@/pages/Ingestion/model'
 import { useAppStore } from '@/store'
-import { showErrorMessage, showSuccessMessage } from '@/utils/feedback'
+import { getErrorMessage } from '@/utils/error'
+import {
+  getIngestionActivity,
+  recordIngestionImport,
+  recordIngestionValidation,
+  summarizeIngestionActivity,
+} from '@/utils/ingestionActivity'
+import type { IngestionHistoryItem, IngestionImportStatus } from '@/utils/ingestionActivity'
 import { parseMemoryImportText } from '@/utils/memoryImport'
 
-const recentImports = [
-  { key: '1', source: '物流调度智能体', type: '历史会话', count: 128, status: '已完成', time: '今天 10:32' },
-  { key: '2', source: '客服助手智能体', type: '对话记录', count: 86, status: '处理中', time: '今天 09:48' },
-  { key: '3', source: '订单处理智能体', type: '任务过程', count: 42, status: '已完成', time: '昨天 18:20' },
-]
+const importStatusMeta: Record<IngestionImportStatus, { label: string; color: string }> = {
+  completed: { label: '已完成', color: 'success' },
+  partial: { label: '部分完成', color: 'warning' },
+  failed: { label: '失败', color: 'error' },
+}
+
+const importTimeFormatter = new Intl.DateTimeFormat('zh-CN', {
+  month: '2-digit',
+  day: '2-digit',
+  hour: '2-digit',
+  minute: '2-digit',
+  hour12: false,
+})
+
+function createHistoryId() {
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
+}
 
 export default function IngestionPage() {
-  const { modal } = App.useApp()
+  const { message, modal } = App.useApp()
   const [searchParams, setSearchParams] = useSearchParams()
   const config = useAppStore((state) => state.config)
   const mode = resolveImportMode(searchParams.get('mode'))
   const [fileList, setFileList] = useState<UploadFile[]>([])
   const [records, setRecords] = useState<MemoryImportRecord[]>([])
   const [importing, setImporting] = useState(false)
+  const [activity, setActivity] = useState(getIngestionActivity)
+
+  const summary = summarizeIngestionActivity(activity, config.userId)
+  const recentImports = activity.imports.filter((item) => item.userId === config.userId)
+  const validationRate = summary.validationPassRate === null
+    ? '—'
+    : `${summary.validationPassRate.toFixed(1)}%`
 
   useEffect(() => {
     setRecords([])
@@ -74,11 +100,13 @@ export default function IngestionPage() {
       const parsed = parseMemoryImportText(file.name, await file.text())
       setRecords(parsed)
       setFileList([{ uid: file.name, name: file.name, status: 'done', size: file.size, type: file.type }])
-      showSuccessMessage(`已解析 ${parsed.length} 条${modeMeta[mode].label}数据`)
+      setActivity(recordIngestionValidation(activity, config.userId, true))
+      void message.success(`已解析 ${parsed.length} 条${modeMeta[mode].label}数据`)
     } catch (error) {
       setRecords([])
       setFileList([])
-      showErrorMessage(error, '文件解析失败')
+      setActivity(recordIngestionValidation(activity, config.userId, false))
+      void message.error(getErrorMessage(error, '文件解析失败'))
     }
     return false
   }
@@ -86,20 +114,42 @@ export default function IngestionPage() {
   const handleImport = async () => {
     if (!records.length) return
     setImporting(true)
+    const source = fileList[0]?.name ?? '未命名导入文件'
+    const totalCount = records.length
+    const createdAt = new Date().toISOString()
     let successCount = 0
     let generatedCount = 0
+    let status: IngestionImportStatus = 'failed'
     try {
       for (const record of records) {
         const result = await writeMemories(buildWritePayload(mode, record, config.userId, config.sceneId))
         successCount += 1
         generatedCount += result.results.length
       }
-      showSuccessMessage(`成功处理 ${successCount} 条导入记录，生成 ${generatedCount} 条记忆`)
+      status = 'completed'
+      void message.success(`成功处理 ${successCount} 条导入记录，生成 ${generatedCount} 条记忆`)
       setRecords([])
       setFileList([])
     } catch (error) {
-      showErrorMessage(error, `已处理 ${successCount} 条导入记录并生成 ${generatedCount} 条记忆，后续数据处理失败`)
+      status = successCount ? 'partial' : 'failed'
+      void message.error(getErrorMessage(
+        error,
+        `已处理 ${successCount} 条导入记录并生成 ${generatedCount} 条记忆，后续数据处理失败`,
+      ))
     } finally {
+      const historyItem: IngestionHistoryItem = {
+        id: createHistoryId(),
+        userId: config.userId,
+        agentId: config.agentId || undefined,
+        mode,
+        source,
+        totalCount,
+        successCount,
+        resultCount: generatedCount,
+        status,
+        createdAt,
+      }
+      setActivity(recordIngestionImport(activity, historyItem))
       setImporting(false)
     }
   }
@@ -110,12 +160,45 @@ export default function IngestionPage() {
       description="统一接收智能体对话、历史会话与任务过程数据，完成校验后写入记忆生成流水线。"
       extra={<Tag color="blue">当前用户：{config.userId}</Tag>}
     >
+      <Alert
+        showIcon
+        type="info"
+        title="当前用户的本地真实统计"
+        description="以下指标和最近导入批次由当前浏览器根据实际解析与写入结果计算，不代表后台全局统计。"
+      />
+
       <Row gutter={[14, 14]}>
         {[
-          { title: '接入智能体', value: '128', note: '已登记并分配场景', icon: <RobotOutlined />, color: '#1677ff' },
-          { title: '今日写入', value: '12,480', note: '较昨日增长 6.2%', icon: <CloudUploadOutlined />, color: '#22a884' },
-          { title: '待处理批次', value: '3', note: '均在预计时间内', icon: <ClockCircleOutlined />, color: '#e49a28' },
-          { title: '数据校验通过率', value: '99.6%', note: '字段与格式自动校验', icon: <CheckCircleOutlined />, color: '#7b61d1' },
+          {
+            title: '本地 Agent 配置',
+            value: config.agentId ? '1' : '0',
+            note: config.agentId ? `Agent ID：${config.agentId}` : '尚未配置 Agent ID',
+            icon: <RobotOutlined />,
+            color: '#1677ff',
+          },
+          {
+            title: '今日成功处理',
+            value: summary.todaySuccessCount.toLocaleString('zh-CN'),
+            note: `共 ${summary.todayBatchCount} 个提交批次`,
+            icon: <CloudUploadOutlined />,
+            color: '#22a884',
+          },
+          {
+            title: '当前处理批次',
+            value: importing ? '1' : '0',
+            note: importing ? '正在顺序写入记录' : '当前无进行中批次',
+            icon: <ClockCircleOutlined />,
+            color: '#e49a28',
+          },
+          {
+            title: '文件校验通过率',
+            value: validationRate,
+            note: summary.validationAttemptCount
+              ? `${summary.validationSuccessCount} 成功 / ${summary.validationAttemptCount} 次`
+              : '暂无本地校验记录',
+            icon: <CheckCircleOutlined />,
+            color: '#7b61d1',
+          },
         ].map((item) => (
           <Col xs={24} sm={12} xl={6} key={item.title}>
             <Card className="console-card ingestion-stat" variant="borderless">
@@ -145,6 +228,7 @@ export default function IngestionPage() {
               </div>
               <Upload.Dragger
                 accept=".json,.csv"
+                disabled={importing}
                 maxCount={1}
                 fileList={fileList}
                 beforeUpload={handleFile}
@@ -186,13 +270,33 @@ export default function IngestionPage() {
         <Table
           size="small"
           pagination={false}
+          rowKey="id"
           dataSource={recentImports}
+          locale={{ emptyText: '当前用户在本浏览器暂无导入记录' }}
           columns={[
             { title: '数据来源', dataIndex: 'source' },
-            { title: '数据类型', dataIndex: 'type', render: (value: string) => <Tag>{value}</Tag> },
-            { title: '记录数', dataIndex: 'count' },
-            { title: '处理状态', dataIndex: 'status', render: (value: string) => <Tag color={value === '处理中' ? 'processing' : 'success'}>{value}</Tag> },
-            { title: '提交时间', dataIndex: 'time' },
+            {
+              title: '数据类型',
+              dataIndex: 'mode',
+              render: (value: ImportMode) => <Tag color={modeMeta[value].color}>{modeMeta[value].label}</Tag>,
+            },
+            {
+              title: '成功/总数',
+              render: (_value: unknown, item: IngestionHistoryItem) => `${item.successCount}/${item.totalCount}`,
+            },
+            { title: '处理结果数', dataIndex: 'resultCount' },
+            {
+              title: '处理状态',
+              dataIndex: 'status',
+              render: (value: IngestionImportStatus) => (
+                <Tag color={importStatusMeta[value].color}>{importStatusMeta[value].label}</Tag>
+              ),
+            },
+            {
+              title: '提交时间',
+              dataIndex: 'createdAt',
+              render: (value: string) => importTimeFormatter.format(new Date(value)),
+            },
           ]}
         />
       </Card>
