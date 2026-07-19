@@ -280,6 +280,21 @@ export interface MemoryListResult {
   page_size: number
 }
 
+export type MemoryLevel = 'user' | 'session' | 'task' | 'agent'
+
+export interface MemoryLevelDistributionItem {
+  level: MemoryLevel
+  count: number
+  ratio: number
+}
+
+export interface MemoryStatsResult {
+  total: number
+  level_distribution: MemoryLevelDistributionItem[]
+  generated_at: string
+  classification_version?: string
+}
+
 export interface MemoryListParams {
   userId: string
   sceneId?: string

@@ -2,8 +2,8 @@ import { DeleteOutlined, EditOutlined, ReloadOutlined } from '@ant-design/icons'
 import { Button, Card, Col, Flex, Form, Input, InputNumber, Modal, Row, Select, Space, Table, Tag, Typography } from 'antd'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useLocation } from 'react-router-dom'
-import type { MemoryItem } from '@/api/types'
-import { deleteMemory, listMemories, searchMemories, updateMemory } from '@/api/modules/memory'
+import type { MemoryItem, MemoryLevel, MemoryStatsResult } from '@/api/types'
+import { deleteMemory, getMemoryStats, listMemories, searchMemories, updateMemory } from '@/api/modules/memory'
 import { MemoryFilterBar } from '@/components/business/MemoryFilterBar'
 import { FeedbackState, PageContainer, openConfirmDialog } from '@/components/common'
 import { useAppStore, useMemoryStore } from '@/store'
@@ -20,10 +20,28 @@ interface MemoryEditValues {
   tags?: string
 }
 
+const memoryLevelCards: Array<{
+  level: MemoryLevel
+  title: string
+  description: string
+  color: string
+}> = [
+  { level: 'user', title: '用户级记忆', description: '用户偏好与稳定事实', color: '#1677ff' },
+  { level: 'session', title: '会话级记忆', description: '历史会话摘要与上下文', color: '#20a47c' },
+  { level: 'task', title: '任务级记忆', description: '目标、进展与执行结果', color: '#e49a28' },
+  { level: 'agent', title: '智能体级记忆', description: '智能体能力、流程与状态经验', color: '#7b61d1' },
+]
+
+const memoryCountFormatter = new Intl.NumberFormat('zh-CN')
+const memoryRatioFormatter = new Intl.NumberFormat('zh-CN', {
+  style: 'percent',
+  maximumFractionDigits: 1,
+})
+
 const scopeMeta: Record<MemoryScope, { title: string; description: string; tableTitle: string }> = {
   all: {
     title: '通用记忆建模与多层记忆管理',
-    description: '统一管理用户、会话、任务和智能体状态记忆，支持检索、修正、归档与删除。',
+    description: '统一管理用户、会话、任务和智能体级记忆，支持检索、修正、归档与删除。',
     tableTitle: '全部记忆单元',
   },
   user: {
@@ -69,6 +87,9 @@ export default function MemoryPage() {
   const [listPage, setListPage] = useState(1)
   const [listPageSize, setListPageSize] = useState(20)
   const [listTotal, setListTotal] = useState(0)
+  const [memoryStats, setMemoryStats] = useState<MemoryStatsResult | null>(null)
+  const [statsLoading, setStatsLoading] = useState(false)
+  const [statsError, setStatsError] = useState<unknown>(null)
   const [isSearchResult, setIsSearchResult] = useState(false)
   const [selectedMemoryIds, setSelectedMemoryIds] = useState<string[]>([])
   const [deleteMode, setDeleteMode] = useState(false)
@@ -120,9 +141,30 @@ export default function MemoryPage() {
     }
   }, [config.userId, setMemories])
 
+  const loadMemoryStats = useCallback(async () => {
+    setStatsLoading(true)
+    setStatsError(null)
+    try {
+      setMemoryStats(await getMemoryStats(config.userId))
+    } catch (loadError) {
+      setMemoryStats(null)
+      setStatsError(loadError)
+    } finally {
+      setStatsLoading(false)
+    }
+  }, [config.userId])
+
   useEffect(() => {
-    void loadAllMemories(1, scope === 'all' ? 20 : 100)
-  }, [loadAllMemories, scope])
+    const requests: Promise<void>[] = [loadAllMemories(1, scope === 'all' ? 20 : 100)]
+    if (scope === 'all') requests.push(loadMemoryStats())
+    void Promise.all(requests)
+  }, [loadAllMemories, loadMemoryStats, scope])
+
+  const handleRefresh = async () => {
+    const requests: Promise<void>[] = [loadAllMemories(1, scope === 'all' ? listPageSize : 100)]
+    if (scope === 'all') requests.push(loadMemoryStats())
+    await Promise.all(requests)
+  }
 
   const handleSearch = async () => {
     if (!keyword.trim()) {
@@ -215,6 +257,7 @@ export default function MemoryPage() {
         setMemories(memories.filter((item) => item.memory_id !== memory.memory_id))
         setSelectedMemoryIds((ids) => ids.filter((id) => id !== memory.memory_id))
         setListTotal((total) => Math.max(0, total - 1))
+        if (scope === 'all') await loadMemoryStats()
         showSuccessMessage('记忆已删除')
       },
     })
@@ -235,6 +278,7 @@ export default function MemoryPage() {
         setMemories(memories.filter((memory) => !succeededIds.includes(memory.memory_id)))
         setSelectedMemoryIds((ids) => ids.filter((id) => !succeededIds.includes(id)))
         setListTotal((total) => Math.max(0, total - succeededIds.length))
+        if (scope === 'all' && succeededIds.length) await loadMemoryStats()
 
         if (failedCount) {
           showWarningMessage(`成功删除 ${succeededIds.length} 条，${failedCount} 条删除失败`)
@@ -264,7 +308,7 @@ export default function MemoryPage() {
       description={pageMeta.description}
       extra={
         <Space>
-          <Button icon={<ReloadOutlined />} onClick={() => void loadAllMemories(1, scope === 'all' ? listPageSize : 100)} loading={loading}>刷新</Button>
+          <Button icon={<ReloadOutlined />} onClick={() => void handleRefresh()} loading={loading || (scope === 'all' && statsLoading)}>刷新</Button>
           <Button danger type={deleteMode ? 'primary' : 'default'} icon={<DeleteOutlined />} onClick={handleToggleDeleteMode}>
             清除记忆
           </Button>
@@ -272,20 +316,29 @@ export default function MemoryPage() {
       }
     >
       {scope === 'all' ? <Row gutter={[12, 12]}>
-        {[
-          ['用户级记忆', '用户偏好与稳定事实', '32%', '#1677ff'],
-          ['会话级记忆', '历史会话摘要与上下文', '26%', '#20a47c'],
-          ['任务级记忆', '目标、进展与执行结果', '24%', '#e49a28'],
-          ['智能体状态记忆', '状态变化与流程轨迹', '18%', '#7b61d1'],
-        ].map(([title, description, value, color]) => (
-          <Col xs={24} sm={12} xl={6} key={title}>
+        {memoryLevelCards.map(({ level, title, description, color }) => {
+          const stats = memoryStats?.level_distribution?.find((item) => item.level === level)
+          const detail = statsLoading
+            ? '正在统计…'
+            : statsError || !stats
+              ? '统计暂不可用'
+              : `${memoryCountFormatter.format(stats.count)} 条`
+          const value = statsLoading || statsError || !stats
+            ? '--'
+            : memoryRatioFormatter.format(stats.ratio)
+
+          return <Col xs={24} sm={12} xl={6} key={level}>
             <Card className="console-card memory-level-card" variant="borderless">
               <span style={{ background: color }} />
-              <div><Typography.Text strong>{title}</Typography.Text><Typography.Text type="secondary">{description}</Typography.Text></div>
+              <div>
+                <Typography.Text strong>{title}</Typography.Text>
+                <Typography.Text type="secondary">{description}</Typography.Text>
+                <Typography.Text type="secondary">{detail}</Typography.Text>
+              </div>
               <strong style={{ color }}>{value}</strong>
             </Card>
           </Col>
-        ))}
+        })}
       </Row> : (
         <Row gutter={[12, 12]}>
           <Col xs={24} md={8}>
