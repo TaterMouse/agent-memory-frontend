@@ -55,7 +55,9 @@ export const generationPresets: Record<GenerationView, GenerationPreset> = {
     title: '关键事实提取',
     description: '识别文本中的关键事实，展示生成、去重及入库结果。',
     extractionTypes: ['key_fact'],
-    focusMemoryTypes: ['key_fact', 'fact'],
+    // 后端会将“必须、禁止、约束条件”等关键事实标注为 constraint；
+    // 它们仍属于关键事实请求的真实输出，不能被默认筛选隐藏。
+    focusMemoryTypes: ['key_fact', 'fact', 'constraint'],
     focusLabel: '事实结果',
     guidance: '建议输入含人物、时间、地点、项目或业务对象的确定性信息。',
   },

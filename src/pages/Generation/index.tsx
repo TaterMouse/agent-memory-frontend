@@ -3,6 +3,7 @@ import {
   CheckCircleFilled,
   ClockCircleOutlined,
   DatabaseOutlined,
+  ExclamationCircleOutlined,
   FileSearchOutlined,
   FilterOutlined,
   LoadingOutlined,
@@ -27,6 +28,7 @@ import {
   Switch,
   Table,
   Tag,
+  Tooltip,
   Typography,
 } from 'antd'
 import { useEffect, useMemo, useState } from 'react'
@@ -51,6 +53,13 @@ import { getGenerationPreset, splitBatchText } from '@/constants/generation'
 import { useAppStore } from '@/store'
 import { getErrorMessage } from '@/utils/error'
 import { showErrorMessage, showSuccessMessage, showWarningMessage } from '@/utils/feedback'
+import {
+  clearStoredGenerationTask,
+  GENERATION_TASK_MAX_AGE,
+  loadStoredGenerationTask,
+  storeGenerationTask,
+} from '@/utils/generationTask'
+import type { AsyncGenerationTask } from '@/utils/generationTask'
 
 type GenerationMode = 'single' | 'batch' | 'async'
 type PipelineState = 'idle' | 'running' | 'completed' | 'failed'
@@ -78,25 +87,6 @@ interface GenerationRow extends MemoryGenerationDetail {
   batchIndex?: number
   sourceText?: string
 }
-
-interface AsyncTaskState {
-  requestId: string
-  status: MemoryAsyncGenerationStatus
-  progress?: number
-  message?: string
-  error?: string
-  submittedAt: number
-  polling: boolean
-}
-
-interface StoredAsyncTask {
-  version: 1
-  requestId: string
-  submittedAt: number
-}
-
-const ASYNC_TASK_STORAGE_KEY = 'memory-console:generation-task:v1'
-const ASYNC_TASK_MAX_AGE = 30 * 60 * 1000
 
 const extractionOptions: Array<{ label: string; value: MemoryExtractionType }> = [
   { label: '关键事实', value: 'key_fact' },
@@ -147,27 +137,6 @@ function parseMetadata(value?: string) {
   return JSON.parse(value) as Record<string, unknown>
 }
 
-function loadStoredAsyncTask(): AsyncTaskState | null {
-  try {
-    const raw = sessionStorage.getItem(ASYNC_TASK_STORAGE_KEY)
-    if (!raw) return null
-    const stored = JSON.parse(raw) as StoredAsyncTask
-    if (stored.version !== 1 || !stored.requestId || Date.now() - stored.submittedAt > ASYNC_TASK_MAX_AGE) {
-      sessionStorage.removeItem(ASYNC_TASK_STORAGE_KEY)
-      return null
-    }
-    return { requestId: stored.requestId, submittedAt: stored.submittedAt, status: 'pending', polling: true }
-  } catch {
-    sessionStorage.removeItem(ASYNC_TASK_STORAGE_KEY)
-    return null
-  }
-}
-
-function storeAsyncTask(task: StoredAsyncTask | null) {
-  if (task) sessionStorage.setItem(ASYNC_TASK_STORAGE_KEY, JSON.stringify(task))
-  else sessionStorage.removeItem(ASYNC_TASK_STORAGE_KEY)
-}
-
 function StageCard({ number, title, description, icon, color, state }: StageCardProps & { state: PipelineState }) {
   const status = state === 'running'
     ? { label: '执行中', icon: <LoadingOutlined spin />, className: 'running' }
@@ -190,6 +159,42 @@ function StageCard({ number, title, description, icon, color, state }: StageCard
   )
 }
 
+interface GenerationHintProps {
+  title: string
+  description?: string
+}
+
+function GenerationHint({ title, description }: GenerationHintProps) {
+  return (
+    <Tooltip
+      trigger="hover"
+      placement="topLeft"
+      title={(
+        <div className="generation-hint-tooltip">
+          <div className="generation-hint-tooltip-title">{title}</div>
+          {description ? <div className="generation-hint-tooltip-description">{description}</div> : null}
+        </div>
+      )}
+    >
+      <ExclamationCircleOutlined className="generation-title-hint" aria-label="查看提示" />
+    </Tooltip>
+  )
+}
+
+interface GenerationSectionTitleProps {
+  title: string
+  hint: GenerationHintProps
+}
+
+function GenerationSectionTitle({ title, hint }: GenerationSectionTitleProps) {
+  return (
+    <span className="generation-section-title">
+      <span>{title}</span>
+      <GenerationHint title={hint.title} description={hint.description} />
+    </span>
+  )
+}
+
 function formatScore(value?: number) {
   if (typeof value !== 'number') return '-'
   const percentage = value <= 1 ? value * 100 : value
@@ -201,19 +206,25 @@ export default function GenerationPage() {
   const [searchParams] = useSearchParams()
   const preset = getGenerationPreset(searchParams.get('view'))
   const [form] = Form.useForm<GenerationFormValues>()
-  const [mode, setMode] = useState<GenerationMode>('single')
+  const [initialState] = useState(() => {
+    const task = loadStoredGenerationTask()
+    return { task, mode: task ? 'async' as const : 'single' as const }
+  })
+  const [mode, setMode] = useState<GenerationMode>(initialState.mode)
   const [loading, setLoading] = useState(false)
   const [runError, setRunError] = useState<unknown>(null)
   const [singleResult, setSingleResult] = useState<MemoryGenerationResult | null>(null)
   const [batchResult, setBatchResult] = useState<MemoryBatchGenerationResult | null>(null)
   const [lastInputs, setLastInputs] = useState<string[]>([])
+  const [resultPresetId, setResultPresetId] = useState(initialState.task?.presetId ?? preset.id)
   const [focusedOnly, setFocusedOnly] = useState(Boolean(preset.focusActions || preset.focusMemoryTypes))
-  const [asyncTask, setAsyncTask] = useState<AsyncTaskState | null>(loadStoredAsyncTask)
+  const [asyncTask, setAsyncTask] = useState<AsyncGenerationTask | null>(initialState.task)
 
   useEffect(() => {
-    form.setFieldValue('extractionTypes', preset.extractionTypes)
-    setFocusedOnly(Boolean(preset.focusActions || preset.focusMemoryTypes))
-  }, [form, preset])
+    if (!asyncTask?.polling) form.setFieldValue('extractionTypes', preset.extractionTypes)
+    const resultPreset = getGenerationPreset(resultPresetId)
+    setFocusedOnly(Boolean(resultPreset.focusActions || resultPreset.focusMemoryTypes))
+  }, [asyncTask?.polling, form, preset, resultPresetId])
 
   useEffect(() => {
     if (!asyncTask?.polling || ['completed', 'failed', 'not_found'].includes(asyncTask.status)) return
@@ -224,7 +235,7 @@ export default function GenerationPage() {
     const schedule = (delay: number) => {
       timer = window.setTimeout(async () => {
         try {
-          if (Date.now() - asyncTask.submittedAt > ASYNC_TASK_MAX_AGE) {
+          if (Date.now() - asyncTask.submittedAt > GENERATION_TASK_MAX_AGE) {
             const message = '异步任务已超过前端最大等待时间，请到记忆列表核对结果。'
             setAsyncTask((current) => current ? { ...current, polling: false, error: message } : current)
             setRunError(new Error(message))
@@ -245,8 +256,10 @@ export default function GenerationPage() {
 
           if (status.status === 'completed' && status.result) {
             setSingleResult(status.result)
+            setLastInputs([asyncTask.inputText])
+            setResultPresetId(asyncTask.presetId)
             setRunError(null)
-            storeAsyncTask(null)
+            clearStoredGenerationTask()
             showSuccessMessage('异步记忆生成流水线执行完成')
             return
           }
@@ -254,7 +267,7 @@ export default function GenerationPage() {
           if (terminal) {
             const message = status.error || status.message || (status.status === 'not_found' ? '后端未找到该异步任务' : '异步记忆生成失败')
             setRunError(new Error(message))
-            storeAsyncTask(null)
+            clearStoredGenerationTask()
             return
           }
 
@@ -273,7 +286,14 @@ export default function GenerationPage() {
       stopped = true
       if (timer !== undefined) window.clearTimeout(timer)
     }
-  }, [asyncTask?.polling, asyncTask?.requestId, asyncTask?.status, asyncTask?.submittedAt])
+  }, [
+    asyncTask?.inputText,
+    asyncTask?.polling,
+    asyncTask?.presetId,
+    asyncTask?.requestId,
+    asyncTask?.status,
+    asyncTask?.submittedAt,
+  ])
 
   const isRunning = loading || Boolean(asyncTask?.polling)
   const activeResult = singleResult ?? batchResult
@@ -315,16 +335,17 @@ export default function GenerationPage() {
     }))) ?? []
   }, [batchResult, lastInputs, singleResult])
 
+  const resultPreset = getGenerationPreset(resultPresetId)
   const visibleRows = useMemo(() => {
     if (!focusedOnly) return detailRows
-    const actions = preset.focusActions?.map(normalizeAction)
-    const memoryTypes = preset.focusMemoryTypes?.map((item) => item.toLowerCase())
+    const actions = resultPreset.focusActions?.map(normalizeAction)
+    const memoryTypes = resultPreset.focusMemoryTypes?.map((item) => item.toLowerCase())
     return detailRows.filter((row) => {
       const actionMatch = actions?.includes(normalizeAction(row.action)) ?? false
       const typeMatch = memoryTypes?.includes(row.memory_type?.toLowerCase() || '') ?? false
       return actionMatch || typeMatch
     })
-  }, [detailRows, focusedOnly, preset.focusActions, preset.focusMemoryTypes])
+  }, [detailRows, focusedOnly, resultPreset.focusActions, resultPreset.focusMemoryTypes])
 
   const resetResults = () => {
     setSingleResult(null)
@@ -333,7 +354,12 @@ export default function GenerationPage() {
   }
 
   const handleModeChange = (value: string | number) => {
-    setMode(value as GenerationMode)
+    const nextMode = value as GenerationMode
+    setMode(nextMode)
+    if (nextMode !== 'async') {
+      setAsyncTask(null)
+      clearStoredGenerationTask()
+    }
     resetResults()
   }
 
@@ -346,6 +372,11 @@ export default function GenerationPage() {
 
     setLoading(true)
     resetResults()
+    setResultPresetId(preset.id)
+    if (mode !== 'async') {
+      setAsyncTask(null)
+      clearStoredGenerationTask()
+    }
     try {
       const common = {
         user_id: config.userId,
@@ -376,14 +407,24 @@ export default function GenerationPage() {
       if (mode === 'async') {
         const submitted = await generateMemoriesAsync(payload)
         const submittedAt = Date.now()
-        setAsyncTask({
+        const task: AsyncGenerationTask = {
           requestId: submitted.request_id,
           status: 'pending',
           message: submitted.message,
           submittedAt,
           polling: true,
-        })
-        storeAsyncTask({ version: 1, requestId: submitted.request_id, submittedAt })
+          restored: false,
+          presetId: preset.id,
+          inputText: text,
+          userId: config.userId,
+          sceneId: config.sceneId || undefined,
+          agentId: config.agentId || undefined,
+          taskId: common.task_id,
+          sessionId: common.session_id,
+          extractionTypes: [...values.extractionTypes],
+        }
+        setAsyncTask(task)
+        storeGenerationTask(task)
         showSuccessMessage('异步任务已提交，页面将自动查询进度')
         return
       }
@@ -403,7 +444,26 @@ export default function GenerationPage() {
     setAsyncTask((current) => current ? { ...current, polling: true, error: undefined } : current)
   }
 
-  const hasFocus = Boolean(preset.focusActions || preset.focusMemoryTypes)
+  const clearAsyncTaskView = () => {
+    setAsyncTask(null)
+    clearStoredGenerationTask()
+  }
+
+  const hasFocus = Boolean(resultPreset.focusActions || resultPreset.focusMemoryTypes)
+  const requestHint = mode === 'batch'
+    ? {
+      title: '每行一条文本，一次最多 50 条',
+      description: '生成可能需要数秒。请求超时不代表后端未写入，请先到记忆列表核对，避免立即重复提交。',
+    }
+    : mode === 'async'
+      ? {
+        title: '单条文本最多 10,000 字符',
+        description: '提交后按后端 request_id 自动轮询；刷新页面后会在当前浏览器会话内继续查询。',
+      }
+      : {
+        title: '单条文本最多 10,000 字符',
+        description: '生成可能需要数秒。请求超时不代表后端未写入，请先到记忆列表核对，避免立即重复提交。',
+      }
   const asyncMeta = asyncTask ? asyncStatusMeta[asyncTask.status] : null
   const asyncProgress = asyncTask?.progress === undefined
     ? 0
@@ -414,18 +474,21 @@ export default function GenerationPage() {
   return (
     <PageContainer
       title={preset.title}
+      titleExtra={<GenerationHint title={preset.guidance} description="统计和处理明细完全来自后端响应；页面不会伪造冲突、融合或过滤结果。" />}
       description={preset.description}
       extra={<Space wrap><Tag color="green">真实 Pipeline</Tag><Tag color="blue">{preset.id === 'all' ? '完整能力' : '场景预设'}</Tag></Space>}
     >
-      <Alert showIcon type="info" title={preset.guidance} description="统计和处理明细完全来自后端响应；页面不会伪造冲突、融合或过滤结果。" />
-
       <div className="generation-grid">
         {stages.map((stage) => <StageCard key={stage.number} {...stage} state={pipelineState} />)}
       </div>
 
       <Row gutter={[14, 14]}>
         <Col xs={24} xl={9}>
-          <Card className="console-card generation-workbench" title="生成请求" variant="borderless">
+          <Card
+            className="console-card generation-workbench"
+            title={<GenerationSectionTitle title="生成请求" hint={requestHint} />}
+            variant="borderless"
+          >
             <Segmented
               block
               disabled={isRunning}
@@ -437,18 +500,15 @@ export default function GenerationPage() {
               ]}
               onChange={handleModeChange}
             />
-            <Alert
-              showIcon
-              type="warning"
-              title={mode === 'batch' ? '每行一条文本，一次最多 50 条' : '单条文本最多 10,000 字符'}
-              description={mode === 'async'
-                ? '提交后按后端 request_id 自动轮询；刷新页面后会在当前浏览器会话内继续查询。'
-                : '生成可能需要数秒。请求超时不代表后端未写入，请先到记忆列表核对，避免立即重复提交。'}
-            />
             <Form<GenerationFormValues>
               form={form}
               layout="vertical"
-              initialValues={{ extractionTypes: preset.extractionTypes }}
+              initialValues={{
+                text: initialState.task?.inputText,
+                taskId: initialState.task?.taskId,
+                sessionId: initialState.task?.sessionId,
+                extractionTypes: initialState.task?.extractionTypes ?? preset.extractionTypes,
+              }}
               onFinish={(values) => void handleGenerate(values)}
             >
               {mode === 'batch' ? (
@@ -532,8 +592,30 @@ export default function GenerationPage() {
               <Flex vertical gap={10}>
                 <Flex justify="space-between" gap={12} wrap>
                   <Typography.Text copyable={{ text: asyncTask.requestId }}>Request ID：{asyncTask.requestId}</Typography.Text>
-                  {asyncMeta ? <Tag color={asyncMeta.color}>{asyncMeta.label}</Tag> : null}
+                  <Space wrap>
+                    {asyncTask.restored ? <Tag color="purple">已恢复任务</Tag> : null}
+                    {asyncMeta ? <Tag color={asyncMeta.color}>{asyncMeta.label}</Tag> : null}
+                    {!asyncTask.polling ? <Button size="small" onClick={clearAsyncTaskView}>关闭任务状态</Button> : null}
+                  </Space>
                 </Flex>
+                {asyncTask.restored ? <Alert type="info" showIcon title="已恢复先前提交的异步任务，以下结果不属于新的同步请求。" /> : null}
+                {asyncTask.presetId !== preset.id ? (
+                  <Alert
+                    type="warning"
+                    showIcon
+                    title={`当前页面是“${preset.title}”，恢复任务来自“${getGenerationPreset(asyncTask.presetId).title}”。`}
+                  />
+                ) : null}
+                <Flex gap={6} wrap>
+                  <Tag color="blue">来源场景：{getGenerationPreset(asyncTask.presetId).title}</Tag>
+                  <Tag>User：{asyncTask.userId}</Tag>
+                  <Tag>Scene：{asyncTask.sceneId || '未设置'}</Tag>
+                  <Tag>Task：{asyncTask.taskId || '未设置'}</Tag>
+                  <Tag>抽取：{asyncTask.extractionTypes.join(', ')}</Tag>
+                </Flex>
+                <Typography.Paragraph type="secondary" ellipsis={{ rows: 2 }} style={{ margin: 0 }}>
+                  提交文本：{asyncTask.inputText}
+                </Typography.Paragraph>
                 <Progress percent={Math.round(Math.max(0, Math.min(100, asyncProgress)))} status={asyncTask.status === 'failed' || asyncTask.status === 'not_found' ? 'exception' : asyncTask.status === 'completed' ? 'success' : 'active'} />
                 {asyncTask.message ? <Typography.Text type="secondary">{asyncTask.message}</Typography.Text> : null}
                 {asyncTask.error && !asyncTask.polling ? (
@@ -572,13 +654,13 @@ export default function GenerationPage() {
               <Card
                 className="console-card"
                 title={`处理明细（${visibleRows.length}/${detailRows.length}）`}
-                extra={hasFocus ? <Flex align="center" gap={8}><Typography.Text type="secondary">仅看{preset.focusLabel}</Typography.Text><Switch size="small" checked={focusedOnly} onChange={setFocusedOnly} /></Flex> : null}
+                extra={hasFocus ? <Flex align="center" gap={8}><Typography.Text type="secondary">仅看{resultPreset.focusLabel}</Typography.Text><Switch size="small" checked={focusedOnly} onChange={setFocusedOnly} /></Flex> : null}
                 variant="borderless"
               >
                 <Table<GenerationRow>
                   rowKey="key"
                   dataSource={visibleRows}
-                  locale={{ emptyText: focusedOnly ? `本次后端未返回${preset.focusLabel || '聚焦'}明细，可关闭筛选查看全部结果。` : '本次没有生成有效记忆或处理明细。' }}
+                  locale={{ emptyText: focusedOnly ? `本次后端未返回${resultPreset.focusLabel || '聚焦'}明细，可关闭筛选查看全部结果。` : '本次没有生成有效记忆或处理明细。' }}
                   pagination={{ pageSize: 8 }}
                   scroll={{ x: 1280 }}
                   columns={[

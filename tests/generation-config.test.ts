@@ -20,6 +20,7 @@ describe('generation presets', () => {
   it('configures extraction and result focus for representative scenarios', () => {
     expect(generationPresets.preference.extractionTypes).toEqual(['preference'])
     expect(generationPresets.fact.focusMemoryTypes).toContain('key_fact')
+    expect(generationPresets.fact.focusMemoryTypes).toContain('constraint')
     expect(generationPresets['task-state'].extractionTypes).toEqual(['task_state'])
     expect(generationPresets['similar-dedup'].focusActions).toEqual([
       'merge',
