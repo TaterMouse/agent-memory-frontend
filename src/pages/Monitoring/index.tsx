@@ -2,10 +2,11 @@ import {
   ApiOutlined,
   ClockCircleOutlined,
   CloudServerOutlined,
+  ExclamationCircleOutlined,
   ReloadOutlined,
 } from '@ant-design/icons'
 import { isAxiosError } from 'axios'
-import { Alert, Button, Card, Col, Flex, Input, Row, Select, Space, Table, Tag, Typography } from 'antd'
+import { Alert, Button, Card, Col, Flex, Input, Row, Select, Space, Table, Tag, Tooltip, Typography } from 'antd'
 import type { TableColumnsType } from 'antd'
 import { useCallback, useEffect, useState } from 'react'
 import { useLocation } from 'react-router-dom'
@@ -189,7 +190,6 @@ function ApiLogsPanel({
 
   return (
     <Space orientation="vertical" size={14} style={{ display: 'flex' }}>
-      <Alert type="info" showIcon title="真实调用日志" description="以下数据来自后端 /api/v1/admin/api-logs；统计范围和分页均以接口返回为准。" />
       <Row gutter={[14, 14]}>
         <Col xs={24} md={8}><Card className="console-card result-stat"><Typography.Text type="secondary">范围内日志总数</Typography.Text><strong>{data.total}</strong></Card></Col>
         <Col xs={24} md={8}><Card className="console-card result-stat"><Typography.Text type="secondary">当前页记录</Typography.Text><strong>{data.items.length}</strong></Card></Col>
@@ -422,6 +422,26 @@ export default function MonitoringPage() {
   return (
     <PageContainer
       title={pageMeta.title}
+      titleExtra={mode === 'calls' ? (
+        <Tooltip
+          trigger={['hover', 'focus']}
+          title={(
+            <>
+              <div style={{ fontWeight: 600 }}>真实调用日志</div>
+              <div>以下数据来自后端 /api/v1/admin/api-logs；统计范围和分页均以接口返回为准。</div>
+            </>
+          )}
+        >
+          <span
+            aria-label="调用日志说明"
+            role="img"
+            tabIndex={0}
+            style={{ color: '#1677ff', cursor: 'help', display: 'inline-flex', fontSize: 16 }}
+          >
+            <ExclamationCircleOutlined aria-hidden />
+          </span>
+        </Tooltip>
+      ) : undefined}
       description={pageMeta.description}
       extra={<Button type="primary" icon={<ReloadOutlined />} loading={refreshLoading} onClick={refreshAll}>刷新数据</Button>}
     >
