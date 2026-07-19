@@ -3,6 +3,7 @@ import type { ComponentType, LazyExoticComponent } from 'react'
 import { FeedbackState } from '@/components/common'
 
 const OverviewPage = lazy(() => import('@/pages/Overview'))
+const ModernPrototypePage = lazy(() => import('@/pages/ModernPrototype'))
 const AgentAccessPage = lazy(() => import('@/pages/AgentAccess'))
 const SceneManagementPage = lazy(() => import('@/pages/SceneManagement'))
 const CredentialManagementPage = lazy(() => import('@/pages/CredentialManagement'))
@@ -26,6 +27,10 @@ function LazyPage({ page: Page }: { page: LazyExoticComponent<ComponentType> }) 
 
 export function OverviewRoutePage() {
   return <LazyPage page={OverviewPage} />
+}
+
+export function ModernPrototypeRoutePage() {
+  return <LazyPage page={ModernPrototypePage} />
 }
 
 export function AgentAccessRoutePage() {
