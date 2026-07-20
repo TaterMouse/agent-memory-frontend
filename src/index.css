@@ -682,9 +682,40 @@ code {
   background: #edf9f4;
 }
 
-.generation-workbench .ant-segmented,
-.generation-workbench .ant-alert {
+.generation-workbench .ant-segmented {
   margin-bottom: 16px;
+}
+
+.generation-section-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.generation-title-hint {
+  color: #8c96a6;
+  cursor: help;
+  font-size: 15px;
+  transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.generation-title-hint:hover {
+  color: #1677ff;
+  transform: scale(1.08);
+}
+
+.generation-hint-tooltip {
+  max-width: 320px;
+  line-height: 1.6;
+}
+
+.generation-hint-tooltip-title {
+  font-weight: 600;
+}
+
+.generation-hint-tooltip-description {
+  margin-top: 4px;
+  opacity: 0.86;
 }
 
 .generation-extraction-options {

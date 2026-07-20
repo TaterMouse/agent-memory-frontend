@@ -1,5 +1,6 @@
 export const appRoutes = {
   overview: '/',
+  modernPrototype: '/prototype',
   agentAccess: '/access/agents',
   sceneManagement: '/access/scenes',
   credentialManagement: '/access/credentials',

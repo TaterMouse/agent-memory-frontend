@@ -16,6 +16,59 @@ export interface AppConfig {
   apiKey: string
 }
 
+export interface HealthResult {
+  status?: string
+  app?: string
+  version?: string
+}
+
+export interface AdminPageResult<T> {
+  items: T[]
+  total: number
+  page: number
+  page_size: number
+}
+
+export interface AdminApiLogItem {
+  log_id: string
+  agent_id?: string | null
+  api_path: string
+  method: string
+  response_code: number
+  error_code?: string | null
+  elapsed_ms?: number | null
+  created_at: string
+  trace_id?: string | null
+}
+
+export interface AdminRetrievalLogItem {
+  request_id: string
+  agent_id?: string | null
+  user_id?: string | null
+  query_text?: string | null
+  top_k?: number | null
+  elapsed_ms?: number | null
+  result_count?: number | null
+  status?: string | null
+  created_at: string
+  trace_id?: string | null
+}
+
+export interface AdminApiLogParams {
+  apiPath?: string
+  errorCode?: string
+  hours?: number
+  page?: number
+  pageSize?: number
+}
+
+export interface AdminRetrievalLogParams {
+  agentId?: string
+  hours?: number
+  page?: number
+  pageSize?: number
+}
+
 export interface DialogueMessage {
   role: 'user' | 'assistant' | 'system'
   content: string
@@ -225,6 +278,21 @@ export interface MemoryListResult {
   total: number
   page: number
   page_size: number
+}
+
+export type MemoryLevel = 'user' | 'session' | 'task' | 'agent'
+
+export interface MemoryLevelDistributionItem {
+  level: MemoryLevel
+  count: number
+  ratio: number
+}
+
+export interface MemoryStatsResult {
+  total: number
+  level_distribution: MemoryLevelDistributionItem[]
+  generated_at: string
+  classification_version?: string
 }
 
 export interface MemoryListParams {

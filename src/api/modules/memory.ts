@@ -12,6 +12,7 @@ import type {
   MemoryItem,
   MemoryListParams,
   MemoryListResult,
+  MemoryStatsResult,
   MemorySearchPayload,
   MemorySearchResult,
   MemoryUpdatePayload,
@@ -99,6 +100,16 @@ export async function listMemories({
   return Array.isArray(result)
     ? { items: result, total: result.length, page, page_size: pageSize }
     : result
+}
+
+export function getMemoryStats(userId: string, sceneId?: string) {
+  const searchParams = new URLSearchParams({ user_id: userId })
+  if (sceneId) searchParams.set('scene_id', sceneId)
+
+  return request<MemoryStatsResult>({
+    url: `/api/v1/memory/stats?${searchParams.toString()}`,
+    method: 'GET',
+  })
 }
 
 export function updateMemory(payload: MemoryUpdatePayload) {
