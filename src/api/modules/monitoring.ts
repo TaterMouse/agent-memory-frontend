@@ -34,7 +34,7 @@ export function buildAdminRetrievalLogsUrl(params: AdminRetrievalLogParams = {})
 }
 
 export async function getHealth() {
-  const response = await apiClient.get<HealthResult>('/health')
+  const response = await apiClient.get<HealthResult>('/api/v1/health')
   return response.data
 }
 

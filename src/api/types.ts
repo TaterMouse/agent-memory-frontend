@@ -20,6 +20,7 @@ export interface HealthResult {
   status?: string
   app?: string
   version?: string
+  database?: boolean
 }
 
 export interface AdminPageResult<T> {
@@ -67,6 +68,112 @@ export interface AdminRetrievalLogParams {
   hours?: number
   page?: number
   pageSize?: number
+}
+
+export interface AdminStatsResult {
+  total_memories: number
+  total_users: number
+  total_agents: number
+  total_sessions: number
+}
+
+export interface AdminDashboardSummary {
+  agent_count: number | null
+  scene_count: number | null
+  memory_count: number | null
+  retrieval_count: number | null
+  context_success_rate: number | null
+}
+
+export interface AdminDashboardComparison {
+  agent_count_rate?: number | null
+  scene_count_rate?: number | null
+  memory_count_rate?: number | null
+  retrieval_count_rate?: number | null
+  context_success_rate_change?: number | null
+}
+
+export interface AdminMemoryTrendItem {
+  date: string
+  total: number
+  added?: number | null
+}
+
+export interface AdminMemoryTypeDistributionItem {
+  memory_type: string
+  count: number
+  ratio: number
+}
+
+export interface AdminGenerationSummary {
+  generated_count?: number | null
+  merged_count?: number | null
+  updated_count?: number | null
+  discarded_count?: number | null
+  conflict_count?: number | null
+}
+
+export interface AdminRetrievalSignalDistributionItem {
+  signal: string
+  count: number
+  ratio: number
+}
+
+export interface AdminRecentAgentItem {
+  agent_id: string
+  scene_id?: string | null
+  scene_name?: string | null
+  status?: string | null
+  last_write_at?: string | null
+  latest_result?: string | null
+}
+
+export interface AdminRecentRetrievalItem {
+  retrieval_id: string
+  memory_type?: string | null
+  summary?: string | null
+  content?: string | null
+  relevance_score?: number | null
+  occurred_at?: string | null
+  created_at?: string | null
+}
+
+export interface AdminAlertItem {
+  message: string
+  error_code?: string | null
+  trace_id?: string | null
+  occurred_at?: string | null
+  status?: string | null
+  resolved_at?: string | null
+}
+
+export interface AdminRecentTaskItem {
+  task_id: string
+  title?: string | null
+  status?: string | null
+  updated_at?: string | null
+}
+
+export type AdminLatestContext = Record<string, unknown> | string
+
+export interface AdminDashboardResult {
+  summary: AdminDashboardSummary
+  comparison: AdminDashboardComparison
+  memory_trend: AdminMemoryTrendItem[]
+  memory_type_distribution: AdminMemoryTypeDistributionItem[]
+  generation_summary: AdminGenerationSummary
+  retrieval_signal_distribution: AdminRetrievalSignalDistributionItem[]
+  recent_agents: AdminRecentAgentItem[]
+  recent_retrievals: AdminRecentRetrievalItem[]
+  recent_alerts: AdminAlertItem[]
+  recent_tasks: AdminRecentTaskItem[]
+  latest_context?: AdminLatestContext | null
+  generated_at?: string | null
+}
+
+export interface AdminDashboardParams {
+  hours?: number
+  trendDays?: number
 }
 
 export interface DialogueMessage {
