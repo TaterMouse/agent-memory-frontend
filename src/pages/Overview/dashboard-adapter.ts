@@ -16,12 +16,6 @@ export function formatDashboardPercent(value: number | null | undefined) {
     : '暂无统计'
 }
 
-export function formatDashboardComparison(value: number | null | undefined) {
-  if (typeof value !== 'number' || !Number.isFinite(value)) return '暂未提供日环比'
-  const direction = value > 0 ? '↑' : value < 0 ? '↓' : '→'
-  return `较昨日 ${direction} ${(Math.abs(value) * 100).toFixed(1)}%`
-}
-
 export function getAgentSceneLabel(agent: AdminRecentAgentItem) {
   return agent.scene_name?.trim() || agent.scene_id?.trim() || '未返回'
 }

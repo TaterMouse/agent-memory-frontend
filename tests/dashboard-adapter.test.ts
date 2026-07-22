@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
 import {
-  formatDashboardComparison,
   formatDashboardNumber,
   formatDashboardPercent,
   getAgentResultLabel,
@@ -13,15 +12,11 @@ describe('dashboard adapters', () => {
   it('uses explicit empty-state copy instead of claiming an unavailable endpoint', () => {
     expect(formatDashboardNumber(null)).toBe('暂无统计')
     expect(formatDashboardPercent(undefined)).toBe('暂无统计')
-    expect(formatDashboardComparison(null)).toBe('暂未提供日环比')
   })
 
-  it('formats real dashboard values and comparison directions', () => {
+  it('formats real dashboard values', () => {
     expect(formatDashboardNumber(6010)).toBe('6,010')
     expect(formatDashboardPercent(0.3757)).toBe('37.6%')
-    expect(formatDashboardComparison(0.3333)).toBe('较昨日 ↑ 33.3%')
-    expect(formatDashboardComparison(-0.1)).toBe('较昨日 ↓ 10.0%')
-    expect(formatDashboardComparison(0)).toBe('较昨日 → 0.0%')
   })
 
   it('keeps agent rows readable when optional backend fields are null', () => {

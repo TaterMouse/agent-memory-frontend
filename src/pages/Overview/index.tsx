@@ -3,14 +3,12 @@ import {
   DatabaseOutlined,
   FileTextOutlined,
   FilterOutlined,
-  ReloadOutlined,
   RobotOutlined,
   SafetyCertificateOutlined,
 } from '@ant-design/icons'
 import {
   Alert,
   Badge,
-  Button,
   Card,
   Col,
   Empty,
@@ -22,7 +20,7 @@ import {
   Tooltip,
   Typography,
 } from 'antd'
-import type { ReactNode } from 'react'
+import type { CSSProperties, ReactNode } from 'react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { getAdminDashboard, getAdminStats } from '@/api/modules/admin'
 import { getAdminApiLogs } from '@/api/modules/monitoring'
@@ -32,7 +30,7 @@ import type {
   AdminRecentTaskItem,
   AdminStatsResult,
 } from '@/api/types'
-import { getAlertPresentationStatus, getAgentResultLabel, getAgentSceneLabel, formatDashboardComparison, formatDashboardNumber, formatDashboardPercent, serializeLatestContext } from './dashboard-adapter'
+import { formatDashboardNumber, formatDashboardPercent, getAlertPresentationStatus, getAgentResultLabel, getAgentSceneLabel, serializeLatestContext } from './dashboard-adapter'
 
 const { Text, Title } = Typography
 
@@ -47,10 +45,8 @@ const dateTimeFormatter = new Intl.DateTimeFormat('zh-CN', {
 interface MetricCardProps {
   title: string
   value: string
-  note: string
   color: string
   icon: ReactNode
-  points?: number[]
 }
 
 interface AgentTableRow {
@@ -99,20 +95,21 @@ function MiniTrend({ points, color }: { points?: number[]; color: string }) {
   )
 }
 
-function MetricCard({ title, value, note, color, icon, points }: MetricCardProps) {
+function MetricCard({ title, value, color, icon }: MetricCardProps) {
   return (
-    <Card className="console-card metric-card" variant="borderless">
-      <Flex justify="space-between" align="flex-start" gap={10}>
-        <Flex gap={12} align="center">
-          <div className="metric-icon" style={{ color, background: `${color}16` }}>{icon}</div>
-          <div>
-            <Text type="secondary" className="metric-label">{title}</Text>
-            <Title level={3} className="metric-value">{value}</Title>
-          </div>
-        </Flex>
-        <MiniTrend points={points} color={color} />
+    <Card
+      className="console-card metric-card"
+      variant="borderless"
+      style={{ '--metric-color': color } as CSSProperties}
+    >
+      <Flex gap={14} align="center" className="metric-card-content">
+        <div className="metric-icon" style={{ color, background: `${color}16` }}>{icon}</div>
+        <div className="metric-copy">
+          <Text type="secondary" className="metric-label">{title}</Text>
+          <Title level={3} className="metric-value">{value}</Title>
+        </div>
       </Flex>
-      <Text className="metric-note">{note}</Text>
+      <span className="metric-card-accent" aria-hidden="true" />
     </Card>
   )
 }
@@ -257,7 +254,6 @@ export default function OverviewPage() {
   }, [loadOverview])
 
   const summary = dashboard?.summary
-  const comparison = dashboard?.comparison ?? {}
   const memoryTrend = dashboard?.memory_trend ?? []
   const memoryDistribution = dashboard?.memory_type_distribution ?? []
   const agentRows = useMemo(() => buildAgentRows(dashboard?.recent_agents ?? []), [dashboard])
@@ -274,36 +270,30 @@ export default function OverviewPage() {
     {
       title: '接入智能体',
       value: formatMetricValue(summary?.agent_count ?? stats?.total_agents, loading, formatDashboardNumber),
-      note: formatDashboardComparison(comparison.agent_count_rate),
       color: '#1677ff',
       icon: <RobotOutlined />,
     },
     {
       title: '业务场景',
       value: formatMetricValue(summary?.scene_count, loading, formatDashboardNumber),
-      note: formatDashboardComparison(comparison.scene_count_rate),
       color: '#22a884',
       icon: <CloudUploadOutlined />,
     },
     {
       title: '记忆总量',
       value: formatMetricValue(summary?.memory_count ?? stats?.total_memories, loading, formatDashboardNumber),
-      note: formatDashboardComparison(comparison.memory_count_rate),
       color: '#7b61d1',
       icon: <DatabaseOutlined />,
-      points: memoryTrend.map((item) => item.total),
     },
     {
       title: '近 24 小时检索调用',
       value: formatMetricValue(summary?.retrieval_count, loading, formatDashboardNumber),
-      note: formatDashboardComparison(comparison.retrieval_count_rate),
       color: '#e99a21',
       icon: <FilterOutlined />,
     },
     {
       title: '上下文返回成功率',
       value: formatMetricValue(summary?.context_success_rate, loading, formatDashboardPercent),
-      note: formatDashboardComparison(comparison.context_success_rate_change),
       color: '#246fd3',
       icon: <SafetyCertificateOutlined />,
     },
@@ -311,18 +301,12 @@ export default function OverviewPage() {
 
   return (
     <Space orientation="vertical" size={14} style={{ display: 'flex' }} className="overview-page">
-      <Flex justify="space-between" align="center" gap={12} wrap>
-        <Text type="secondary">总览数据来自后端聚合接口；趋势未提供时显示明确空态。</Text>
-        <Button icon={<ReloadOutlined />} loading={loading} onClick={() => void loadOverview}>刷新数据</Button>
-      </Flex>
-
       {!loading && hasLoadError ? (
         <Alert
           type="warning"
           showIcon
           message="部分总览数据加载失败"
-          description="页面仅展示已成功返回的数据；请检查管理员权限和后端聚合接口后重试。"
-          action={<Button size="small" onClick={() => void loadOverview}>重试</Button>}
+          description="页面仅展示已成功返回的数据；请检查管理员权限和后端聚合接口。"
         />
       ) : null}
 
