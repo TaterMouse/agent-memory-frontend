@@ -33,6 +33,9 @@ import type {
 import { formatDashboardNumber, formatDashboardPercent, getAlertPresentationStatus, getAgentResultLabel, getAgentSceneLabel, serializeLatestContext } from './dashboard-adapter'
 
 const { Text, Title } = Typography
+const UNAVAILABLE = '接口不可用'
+const NO_DATA = '暂无数据'
+const trendColors = ['#2474cf', '#20a47c', '#e7a32e', '#795fca', '#77b4e0', '#a6d0ee']
 
 const dateTimeFormatter = new Intl.DateTimeFormat('zh-CN', {
   month: '2-digit',
