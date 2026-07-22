@@ -292,6 +292,88 @@ code {
   min-height: 282px;
 }
 
+.overview-table-scroll {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.overview-agent-table {
+  min-width: 890px;
+}
+
+.overview-agent-table .ant-table-cell {
+  min-width: 0;
+}
+
+.overview-agent-table .ant-typography {
+  display: block;
+  max-width: 100%;
+}
+
+.mini-trend-empty {
+  width: 72px;
+  font-size: 10px;
+  line-height: 1.4;
+  text-align: right;
+}
+
+.memory-distribution-row {
+  min-width: 0;
+}
+
+.memory-distribution-track {
+  height: 7px;
+  margin-top: 5px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #edf1f6;
+}
+
+.memory-distribution-track span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+}
+
+.overview-trend-summary {
+  margin-top: 26px;
+  padding-top: 12px;
+  border-top: 1px solid #edf1f5;
+  color: #8490a3;
+  font-size: 12px;
+}
+
+.context-contract-empty {
+  min-height: 190px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 20px;
+  border: 1px dashed #cbd7e6;
+  border-radius: 8px;
+  color: #8c99aa;
+  text-align: center;
+}
+
+.context-contract-empty > span:first-child {
+  color: #6f8eb8;
+  font-size: 28px;
+}
+
+.overview-subsection-title {
+  padding-top: 6px;
+  border-top: 1px solid #edf1f5;
+  color: #6f7f94;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.overview-nowrap {
+  white-space: nowrap;
+}
+
 .memory-layer {
   display: flex;
   align-items: center;

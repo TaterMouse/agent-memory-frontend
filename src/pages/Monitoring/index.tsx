@@ -121,7 +121,7 @@ function HealthPanel({ checking, error, health, latencyMs, checkedAt, onRetry }:
         <Col xs={24} md={8}>
           <Card className="console-card monitor-status" variant="borderless">
             <ApiOutlined />
-            <div><Typography.Text type="secondary">接口版本</Typography.Text><strong>{health?.version || '-'}</strong><Typography.Text>来自 /health</Typography.Text></div>
+            <div><Typography.Text type="secondary">接口版本</Typography.Text><strong>{health?.version || '-'}</strong><Typography.Text>来自 /api/v1/health</Typography.Text></div>
           </Card>
         </Col>
         <Col xs={24} md={8}>
@@ -132,7 +132,7 @@ function HealthPanel({ checking, error, health, latencyMs, checkedAt, onRetry }:
         </Col>
       </Row>
 
-      {checking && !health ? <Alert type="info" showIcon title="正在检查后端服务" description="正在请求 /health，请稍候。" /> : null}
+      {checking && !health ? <Alert type="info" showIcon title="正在检查后端服务" description="正在请求 /api/v1/health，请稍候。" /> : null}
       {!checking && error ? (
         <Alert
           type="error"
