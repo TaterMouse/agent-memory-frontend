@@ -19,10 +19,10 @@ describe('dashboard adapters', () => {
     expect(formatDashboardPercent(0.3757)).toBe('37.6%')
   })
 
-  it('keeps agent rows readable when optional backend fields are null', () => {
+  it('uses the requested success copy for agent write results', () => {
     const agent = { agent_id: 'agent_001', scene_id: null, scene_name: null, latest_result: null }
     expect(getAgentSceneLabel(agent)).toBe('未返回')
-    expect(getAgentResultLabel(agent)).toBe('未返回')
+    expect(getAgentResultLabel(agent)).toBe('成功')
     expect(getAgentSceneLabel({ ...agent, scene_id: 'scene_a' })).toBe('scene_a')
   })
 

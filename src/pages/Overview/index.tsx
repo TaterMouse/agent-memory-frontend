@@ -254,6 +254,7 @@ export default function OverviewPage() {
   }, [loadOverview])
 
   const summary = dashboard?.summary
+  const memoryTotal = summary?.memory_count
   const memoryTrend = dashboard?.memory_trend ?? []
   const memoryDistribution = dashboard?.memory_type_distribution ?? []
   const agentRows = useMemo(() => buildAgentRows(dashboard?.recent_agents ?? []), [dashboard])
@@ -281,7 +282,7 @@ export default function OverviewPage() {
     },
     {
       title: '记忆总量',
-      value: formatMetricValue(summary?.memory_count ?? stats?.total_memories, loading, formatDashboardNumber),
+      value: formatMetricValue(memoryTotal, loading, formatDashboardNumber),
       color: '#7b61d1',
       icon: <DatabaseOutlined />,
     },
@@ -379,7 +380,7 @@ export default function OverviewPage() {
             <Flex justify="space-between" align="flex-start" gap={12}>
               <div>
                 <Text type="secondary">最新累计记忆</Text>
-                <Title level={2} style={{ margin: '4px 0 0' }}>{formatDashboardNumber(memoryTrend.at(-1)?.total)}</Title>
+                <Title level={2} style={{ margin: '4px 0 0' }}>{formatMetricValue(memoryTotal, loading, formatDashboardNumber)}</Title>
                 <Text type="secondary">{memoryTrend.at(-1)?.date ?? '暂无趋势日期'}</Text>
               </div>
               <MiniTrend points={memoryTrend.map((item) => item.total)} color="#2676ce" />
@@ -402,7 +403,7 @@ export default function OverviewPage() {
               <div className="context-contract-empty">
                 <FileTextOutlined />
                 <Text strong>暂无最近上下文</Text>
-                <Text type="secondary">当前 Dashboard 响应未提供 `latest_context`，前端已按空态处理，不再误报接口失败。</Text>
+                <Text type="secondary">当前 Dashboard 响应未提供 `latest_context`；前端无法从现有聚合结果还原最近一次上下文，请后端补充该字段或提供最新上下文查询接口。</Text>
               </div>
             )}
           </Card>

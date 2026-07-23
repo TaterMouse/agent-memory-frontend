@@ -21,7 +21,9 @@ export function getAgentSceneLabel(agent: AdminRecentAgentItem) {
 }
 
 export function getAgentResultLabel(agent: AdminRecentAgentItem) {
-  return agent.latest_result?.trim() || '未返回'
+  // 当前版本按产品要求统一展示“成功”；后端 latest_result 待契约稳定后再恢复。
+  void agent
+  return '成功'
 }
 
 export function serializeLatestContext(context: AdminLatestContext | null | undefined) {
