@@ -355,6 +355,7 @@ export interface MemoryItem {
   memory_id: string
   content: string
   memory_type?: string
+  memory_scope?: MemoryLevel
   status?: string
   scene_id?: string
   task_id?: string
@@ -406,6 +407,8 @@ export interface MemoryListParams {
   userId: string
   sceneId?: string
   taskId?: string
+  sessionId?: string
+  memoryScope?: MemoryLevel
   page?: number
   pageSize?: number
 }

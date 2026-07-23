@@ -81,6 +81,8 @@ export async function listMemories({
   userId,
   sceneId,
   taskId,
+  sessionId,
+  memoryScope,
   page = 1,
   pageSize = 20,
 }: MemoryListParams) {
@@ -91,6 +93,8 @@ export async function listMemories({
   })
   if (sceneId) searchParams.set('scene_id', sceneId)
   if (taskId) searchParams.set('task_id', taskId)
+  if (sessionId) searchParams.set('session_id', sessionId)
+  if (memoryScope) searchParams.set('memory_scope', memoryScope)
 
   const result = await request<MemoryItem[] | MemoryListResult>({
     url: `/api/v1/memory/list?${searchParams.toString()}`,

@@ -105,12 +105,10 @@ export default function MemoryPage() {
     setDeleteMode(false)
   }, [config.userId])
 
-  const visibleMemories = useMemo(() => memories.filter((memory) => {
-    if (scope === 'user') return true
-    if (scope === 'session') return !scopeId.trim() || memory.session_id === scopeId.trim()
-    if (scope === 'task') return !scopeId.trim() || memory.task_id === scopeId.trim()
-    return true
-  }), [memories, scope, scopeId])
+  // 层级和 Session/Task ID 已经由后端分页过滤，页面不再对当前页样本做二次层级过滤。
+  // 否则当匹配数据超过单页上限时，前端会得到错误的总数和不完整的结果。
+  const visibleMemories = memories
+  const scopeFilterId = scope === 'session' || scope === 'task' ? scopeId.trim() || undefined : undefined
 
   const visibleMemoryIds = useMemo(
     () => visibleMemories.map((memory) => memory.memory_id),
@@ -119,13 +117,16 @@ export default function MemoryPage() {
   const allVisibleSelected = visibleMemoryIds.length > 0
     && visibleMemoryIds.every((memoryId) => selectedMemoryIds.includes(memoryId))
 
-  const loadAllMemories = useCallback(async (page = 1, pageSize = 20, taskId?: string) => {
+  const loadAllMemories = useCallback(async (page = 1, pageSize = 20, scopeIdValue?: string) => {
     setLoading(true)
     setError(null)
     try {
+      const normalizedScopeId = scopeIdValue?.trim() || undefined
       const result = await listMemories({
         userId: config.userId,
-        taskId,
+        memoryScope: scope === 'all' ? undefined : scope,
+        sessionId: scope === 'session' ? normalizedScopeId : undefined,
+        taskId: scope === 'task' ? normalizedScopeId : undefined,
         page,
         pageSize,
       })
@@ -139,7 +140,7 @@ export default function MemoryPage() {
     } finally {
       setLoading(false)
     }
-  }, [config.userId, setMemories])
+  }, [config.userId, scope, setMemories])
 
   const loadMemoryStats = useCallback(async () => {
     setStatsLoading(true)
@@ -155,20 +156,20 @@ export default function MemoryPage() {
   }, [config.userId])
 
   useEffect(() => {
-    const requests: Promise<void>[] = [loadAllMemories(1, scope === 'all' ? 20 : 100)]
+    const requests: Promise<void>[] = [loadAllMemories(1, 20)]
     if (scope === 'all') requests.push(loadMemoryStats())
     void Promise.all(requests)
   }, [loadAllMemories, loadMemoryStats, scope])
 
   const handleRefresh = async () => {
-    const requests: Promise<void>[] = [loadAllMemories(1, scope === 'all' ? listPageSize : 100)]
+    const requests: Promise<void>[] = [loadAllMemories(1, listPageSize, scopeFilterId)]
     if (scope === 'all') requests.push(loadMemoryStats())
     await Promise.all(requests)
   }
 
   const handleSearch = async () => {
     if (!keyword.trim()) {
-      await loadAllMemories(1, scope === 'all' ? 20 : 100, scope === 'task' ? scopeId.trim() || undefined : undefined)
+      await loadAllMemories(1, listPageSize, scopeFilterId)
       return
     }
     setLoading(true)
@@ -180,7 +181,8 @@ export default function MemoryPage() {
         memory_types: type === 'all' ? undefined : [type],
         top_k: 50,
         rerank,
-        task_id: scope === 'task' && scopeId.trim() ? scopeId.trim() : undefined,
+        session_id: scope === 'session' ? scopeFilterId : undefined,
+        task_id: scope === 'task' ? scopeFilterId : undefined,
       })
       setMemories(result.results)
       setListTotal(result.results.length)
@@ -350,7 +352,7 @@ export default function MemoryPage() {
           <Col xs={24} md={8}>
             <Card className="console-card result-stat" variant="borderless">
               <Typography.Text type="secondary">范围内记忆</Typography.Text>
-              <strong>{visibleMemories.length}</strong>
+              <strong>{listTotal}</strong>
             </Card>
           </Col>
           <Col xs={24} md={8}>
@@ -371,9 +373,7 @@ export default function MemoryPage() {
             value={scopeId}
             placeholder={scope === 'session' ? '输入 Session ID 筛选会话记忆' : '输入 Task ID 筛选任务记忆'}
             onChange={(event) => setScopeId(event.target.value)}
-            onSearch={(value) => {
-              if (scope === 'task') void loadAllMemories(1, 100, value.trim() || undefined)
-            }}
+            onSearch={(value) => void loadAllMemories(1, listPageSize, value.trim() || undefined)}
           />
         </Card>
       ) : null}
@@ -390,9 +390,9 @@ export default function MemoryPage() {
       />
 
       {loading ? <FeedbackState status="loading" description="正在加载记忆库…" /> : null}
-      {!loading && error ? <FeedbackState status="error" title="记忆加载失败" error={error} action={<Button onClick={() => void loadAllMemories()}>重新加载</Button>} /> : null}
+      {!loading && error ? <FeedbackState status="error" title="记忆加载失败" error={error} action={<Button onClick={() => void loadAllMemories(1, listPageSize, scopeFilterId)}>重新加载</Button>} /> : null}
       {!loading && !error ? (
-        <Card className="console-card" title={`${pageMeta.tableTitle}（${scope === 'all' && !isSearchResult ? listTotal : visibleMemories.length}）`} variant="borderless">
+        <Card className="console-card" title={`${pageMeta.tableTitle}（${isSearchResult ? visibleMemories.length : listTotal}）`} variant="borderless">
           <Table<MemoryItem>
             rowKey="memory_id"
             dataSource={visibleMemories}
@@ -404,7 +404,7 @@ export default function MemoryPage() {
             } : undefined}
             locale={{ emptyText: '暂无记忆，请先从“记忆数据导入”页面写入数据。' }}
             scroll={{ x: 900 }}
-            pagination={isSearchResult || scope !== 'all'
+            pagination={isSearchResult
               ? { pageSize: 10, showSizeChanger: true }
               : {
                   current: listPage,
@@ -412,7 +412,7 @@ export default function MemoryPage() {
                   total: listTotal,
                   showSizeChanger: true,
                   showTotal: (total) => `共 ${total} 条`,
-                  onChange: (page, pageSize) => void loadAllMemories(page, pageSize),
+                  onChange: (page, pageSize) => void loadAllMemories(page, pageSize, scopeFilterId),
                 }}
             columns={[
               { title: '记忆内容', dataIndex: 'content', ellipsis: true, width: 330 },
