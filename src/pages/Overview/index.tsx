@@ -3,6 +3,7 @@ import {
   DatabaseOutlined,
   FileTextOutlined,
   FilterOutlined,
+  PlusOutlined,
   RobotOutlined,
   SafetyCertificateOutlined,
 } from '@ant-design/icons'
@@ -256,6 +257,9 @@ export default function OverviewPage() {
   const summary = dashboard?.summary
   const memoryTotal = summary?.memory_count
   const memoryTrend = dashboard?.memory_trend ?? []
+  const latestMemoryTrend = memoryTrend.at(-1)
+  const latestAdded = latestMemoryTrend?.added
+  const hasLatestAdded = latestAdded !== undefined && latestAdded !== null
   const memoryDistribution = dashboard?.memory_type_distribution ?? []
   const agentRows = useMemo(() => buildAgentRows(dashboard?.recent_agents ?? []), [dashboard])
   const contextPreview = serializeLatestContext(dashboard?.latest_context)
@@ -377,18 +381,42 @@ export default function OverviewPage() {
         </Col>
         <Col xs={24} xl={12}>
           <Card className="console-card dashboard-panel" title="记忆增长趋势（近 7 天）" variant="borderless">
-            <Flex justify="space-between" align="flex-start" gap={12}>
-              <div>
-                <Text type="secondary">最新累计记忆</Text>
-                <Title level={2} style={{ margin: '4px 0 0' }}>{formatMetricValue(memoryTotal, loading, formatDashboardNumber)}</Title>
-                <Text type="secondary">{memoryTrend.at(-1)?.date ?? '暂无趋势日期'}</Text>
+            <div className="overview-trend-main">
+              <div className="overview-trend-total">
+                <div className="overview-trend-eyebrow">
+                  <span className="overview-trend-eyebrow-dot" aria-hidden="true" />
+                  <Text>累计记忆总量</Text>
+                </div>
+                <Title level={2} className="overview-trend-total-value">
+                  {formatMetricValue(memoryTotal, loading, formatDashboardNumber)}
+                </Title>
+                <Text type="secondary" className="overview-trend-date">
+                  {latestMemoryTrend?.date ? `统计截至 ${latestMemoryTrend.date}` : '暂无趋势日期'}
+                </Text>
               </div>
-              <MiniTrend points={memoryTrend.map((item) => item.total)} color="#2676ce" />
-            </Flex>
-            <div className="overview-trend-summary">
-              {memoryTrend.at(-1)?.added !== undefined && memoryTrend.at(-1)?.added !== null
-                ? `最近一天新增 ${formatDashboardNumber(memoryTrend.at(-1)?.added)}`
-                : '后端暂未返回最近一天新增量'}
+              <div className="overview-trend-chart" aria-label="近 7 天记忆累计趋势">
+                <Flex justify="space-between" align="center" className="overview-trend-chart-heading">
+                  <Text strong>累计趋势</Text>
+                  <Text type="secondary">近 7 天</Text>
+                </Flex>
+                <MiniTrend points={memoryTrend.map((item) => item.total)} color="#2676ce" />
+              </div>
+            </div>
+            <div className="overview-trend-divider" aria-hidden="true" />
+            <div className={`overview-trend-addition${hasLatestAdded ? '' : ' is-empty'}`}>
+              <div className="overview-trend-addition-icon" aria-hidden="true">
+                <PlusOutlined />
+              </div>
+              <div className="overview-trend-addition-copy">
+                <Text strong className="overview-trend-addition-label">最近一天新增</Text>
+                <Text type="secondary" className="overview-trend-addition-meta">
+                  {hasLatestAdded && latestMemoryTrend?.date ? `统计日 ${latestMemoryTrend.date}` : '后端暂未返回新增量'}
+                </Text>
+              </div>
+              <div className="overview-trend-addition-value" aria-label="最近一天新增记忆条数">
+                <strong>{hasLatestAdded ? formatDashboardNumber(latestAdded) : '—'}</strong>
+                {hasLatestAdded ? <span>条</span> : null}
+              </div>
             </div>
           </Card>
         </Col>
