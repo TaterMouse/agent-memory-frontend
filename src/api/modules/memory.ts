@@ -106,6 +106,32 @@ export async function listMemories({
     : result
 }
 
+export async function listAllMemories(
+  params: Omit<MemoryListParams, 'page' | 'pageSize'> & { pageSize?: number },
+) {
+  const pageSize = Math.min(Math.max(params.pageSize ?? 100, 1), 100)
+  const firstPage = await listMemories({ ...params, page: 1, pageSize })
+  const effectivePageSize = firstPage.page_size || pageSize
+  const pageCount = Math.ceil(firstPage.total / effectivePageSize)
+
+  if (pageCount <= 1) return firstPage
+
+  const remainingPages = await Promise.all(
+    Array.from({ length: pageCount - 1 }, (_, index) => listMemories({
+      ...params,
+      page: index + 2,
+      pageSize: effectivePageSize,
+    })),
+  )
+
+  return {
+    items: [firstPage, ...remainingPages].flatMap((page) => page.items),
+    total: firstPage.total,
+    page: 1,
+    page_size: effectivePageSize,
+  }
+}
+
 export function getMemoryStats(userId: string, sceneId?: string) {
   const searchParams = new URLSearchParams({ user_id: userId })
   if (sceneId) searchParams.set('scene_id', sceneId)

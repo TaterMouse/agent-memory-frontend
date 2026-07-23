@@ -3,11 +3,13 @@ import { Button, Card, Col, Flex, Form, Input, InputNumber, Modal, Row, Select, 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import type { MemoryItem, MemoryLevel, MemoryStatsResult } from '@/api/types'
-import { deleteMemory, getMemoryStats, listMemories, searchMemories, updateMemory } from '@/api/modules/memory'
+import { deleteMemory, getMemoryStats, listAllMemories, listMemories, searchMemories, updateMemory } from '@/api/modules/memory'
 import { MemoryFilterBar } from '@/components/business/MemoryFilterBar'
 import { FeedbackState, PageContainer, openConfirmDialog } from '@/components/common'
+import { buildMemorySearchPayload } from '@/pages/Memory/service'
 import { useAppStore, useMemoryStore } from '@/store'
 import { showErrorMessage, showSuccessMessage, showWarningMessage } from '@/utils/feedback'
+import { buildMemoryTypeFilter, filterMemoriesByType } from '@/utils/memory'
 
 type MemoryScope = 'all' | 'user' | 'session' | 'task'
 
@@ -142,6 +144,31 @@ export default function MemoryPage() {
     }
   }, [config.userId, scope, setMemories])
 
+  const loadTypeFilteredMemories = useCallback(async (memoryTypes: string[], scopeIdValue?: string) => {
+    setLoading(true)
+    setError(null)
+    try {
+      const normalizedScopeId = scopeIdValue?.trim() || undefined
+      const result = await listAllMemories({
+        userId: config.userId,
+        memoryScope: scope === 'all' ? undefined : scope,
+        sessionId: scope === 'session' ? normalizedScopeId : undefined,
+        taskId: scope === 'task' ? normalizedScopeId : undefined,
+        pageSize: 100,
+      })
+      const filteredItems = filterMemoriesByType(result.items, memoryTypes)
+      setMemories(filteredItems)
+      setListPage(1)
+      setListTotal(filteredItems.length)
+      setIsSearchResult(true)
+      setSelectedMemoryIds([])
+    } catch (loadError) {
+      setError(loadError)
+    } finally {
+      setLoading(false)
+    }
+  }, [config.userId, scope, setMemories])
+
   const loadMemoryStats = useCallback(async () => {
     setStatsLoading(true)
     setStatsError(null)
@@ -168,22 +195,30 @@ export default function MemoryPage() {
   }
 
   const handleSearch = async () => {
-    if (!keyword.trim()) {
+    const normalizedKeyword = keyword.trim()
+    const memoryTypes = buildMemoryTypeFilter(type)
+    if (!normalizedKeyword && memoryTypes) {
+      await loadTypeFilteredMemories(memoryTypes, scopeFilterId)
+      return
+    }
+
+    const searchPayload = buildMemorySearchPayload({
+      keyword,
+      memoryType: type,
+      userId: config.userId,
+      rerank,
+      sessionId: scope === 'session' ? scopeFilterId : undefined,
+      taskId: scope === 'task' ? scopeFilterId : undefined,
+    })
+
+    if (!searchPayload) {
       await loadAllMemories(1, listPageSize, scopeFilterId)
       return
     }
     setLoading(true)
     setError(null)
     try {
-      const result = await searchMemories({
-        query: keyword.trim(),
-        user_id: config.userId,
-        memory_types: type === 'all' ? undefined : [type],
-        top_k: 50,
-        rerank,
-        session_id: scope === 'session' ? scopeFilterId : undefined,
-        task_id: scope === 'task' ? scopeFilterId : undefined,
-      })
+      const result = await searchMemories(searchPayload)
       setMemories(result.results)
       setListTotal(result.results.length)
       setIsSearchResult(true)

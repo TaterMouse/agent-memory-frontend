@@ -42,6 +42,7 @@ export function MemoryFilterBar({
             { label: '任务', value: 'task' },
             { label: '决策', value: 'decision' },
             { label: '约束', value: 'constraint' },
+            { label: '过程', value: 'process' },
           ]}
         />
         <Flex align="center" gap={8}>

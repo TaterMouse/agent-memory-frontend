@@ -6,6 +6,7 @@ import type { MemoryItem, MemorySearchResult } from '@/api/types'
 import { searchMemories } from '@/api/modules/memory'
 import { FeedbackState, PageContainer } from '@/components/common'
 import { useAppStore } from '@/store'
+import { buildMemoryTypeFilter } from '@/utils/memory'
 import { showErrorMessage } from '@/utils/feedback'
 
 interface RetrievalFormValues {
@@ -99,11 +100,11 @@ export default function RetrievalPage() {
     setLoading(true)
     try {
       setResult(await searchMemories({
-        query: values.query?.trim() || '筛选全部记忆',
+        query: values.query?.trim() || '',
         user_id: config.userId,
         scene_id: values.sceneId?.trim() || undefined,
         session_id: values.sessionId?.trim() || undefined,
-        memory_types: !values.memoryType || values.memoryType === 'all' ? undefined : [values.memoryType],
+        memory_types: buildMemoryTypeFilter(values.memoryType),
         status: !values.status || values.status === 'all' ? undefined : [values.status],
         top_k: values.topK,
         rerank: mode === 'fusion' || mode === 'all' ? values.rerank : false,
@@ -150,6 +151,7 @@ export default function RetrievalPage() {
                   { value: 'task', label: '任务状态' },
                   { value: 'decision', label: '历史决策' },
                   { value: 'constraint', label: '约束条件' },
+                  { value: 'process', label: '过程记忆' },
                 ]} />
               </Form.Item>
             </Col> : null}
